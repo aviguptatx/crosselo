@@ -24,6 +24,6 @@ linreg = "0.2.0"
 reqwest = "0.11.24"
 
 [profile.release]
-lto = true
+lto = "fat"
 strip = true
 codegen-units = 1
