@@ -1,0 +1,90 @@
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Head to Head Statistics</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous"></head>
+    <link rel="stylesheet" type="text/css" href="/styles/styles.css">
+    <link href="data:image/x-icon;base64,AAABAAEAEBAQAAEABAAoAQAAFgAAACgAAAAQAAAAIAAAAAEABAAAAAAAgAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA////AAC27wA7njsAjo6OAOvs7ADExMQA4ohLAB0eHgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAiCIiIYiIiIiIIiIhiIiIiIgiIiGIgRGIiCIiIYgQCIiIIiIhiBAFiBERERGIEQCIdzMzMYhBYYh3MzMxiIiIiHczMzGIiIiIdzMzMYiIiIh3MzMxiIiIiIiIiIEiIid3iIiIgSIiJ3eIiIiBIiInd4iIiIEiIid3iIiIgSIiJ3cAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" rel="icon" type="image/x-icon">    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+</head>
+
+<nav class="navbar navbar-custom">
+    <div class="navbar-left">
+        <a class="navbar-brand" href="/">Home</a>
+    </div>
+    <div class="navbar-center">
+        <a class="navbar-brand" href="/podium">Podium</a>
+        <a class="navbar-brand" href="/recent">Recent</a>
+        <a class="navbar-brand" href="/today">Today</a>
+        <a class="navbar-brand" href="/h2h">H2H</a>
+    </div>
+    <div class="navbar-right">
+        <a class="btn btn-primary" href="https://www.nytimes.com/puzzles/leaderboards/invite/341f3f73-133e-440d-b6ca-ca5b08a0d7c4">Join</a>
+    </div>
+</nav>
+
+<div class="container mt-5">
+    <h1 class="mb-4 text-center">Head to Head Comparison</h1>
+    <h4 class="mb-4 text-center">Stastistics on crosswords that BOTH players participated in.</h4>
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <label for="user1Select">Select Player 1:</label>
+            <select class="form-control" id="user1Select">
+                {% for user in users %}
+                    <option {% if user == data.user1.as_str() %} selected {% endif %}>{{ user }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label for="user2Select">Select Player 2:</label>
+            <select class="form-control" id="user2Select">
+                {% for user in users %}
+                    <option {% if user == data.user2.as_str() %} selected {% endif %}>{{ user }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class="row mt-4">
+        <div class="col-md-12 text-center">
+            <button class="btn btn-primary" onclick="getHeadToHeadStats()">Get Statistics</button>
+        </div>
+    </div>
+</div>
+
+{% if populated %}
+<div class="container mt-5">
+    <h2 class="text-center">Head to Head Stats</h2>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="text-center">
+                {% if data.user1 == data.user2 %}
+                <p>Try selecting different players, silly.</p>
+                {% else %}
+                <p><span id="totalMatches"><strong>{{ data.user1 }}</strong> and <strong>{{ data.user2 }}</strong> have played <strong>{{ data.total_matches }}</strong> crossword(s) together.</span></p>
+                <p><span id="wins"></span> <strong>{{ data.user1 }}</strong> has <strong>{{ data.wins_user1 }}</strong> win(s) while <strong>{{ data.user2 }}</strong> has <strong>{{ data.wins_user2 }}</strong> win(s). They have <strong>{{ data.ties }}</strong> tie(s).</p>
+                <p><span id="avgTimeDiff"><strong>{{ data.time_diff_description }}</strong></span></p>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    function getHeadToHeadStats() {
+        var user1 = document.getElementById("user1Select").value;
+        var user2 = document.getElementById("user2Select").value;
+        var url;
+
+        if (user1 && user2) {
+            url = "/h2h/" + encodeURIComponent(user1) + "/" + encodeURIComponent(user2);
+        } else {
+            url = "/h2h";
+        }
+
+        window.location.href = url;
+    }
+</script>

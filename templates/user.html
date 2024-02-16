@@ -1,0 +1,59 @@
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{username}}'s stats</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous"></head>
+    <link rel="stylesheet" type="text/css" href="/styles/styles.css">
+    <link href="data:image/x-icon;base64,AAABAAEAEBAQAAEABAAoAQAAFgAAACgAAAAQAAAAIAAAAAEABAAAAAAAgAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA////AAC27wA7njsAjo6OAOvs7ADExMQA4ohLAB0eHgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAiCIiIYiIiIiIIiIhiIiIiIgiIiGIgRGIiCIiIYgQCIiIIiIhiBAFiBERERGIEQCIdzMzMYhBYYh3MzMxiIiIiHczMzGIiIiIdzMzMYiIiIh3MzMxiIiIiIiIiIEiIid3iIiIgSIiJ3eIiIiBIiInd4iIiIEiIid3iIiIgSIiJ3cAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" rel="icon" type="image/x-icon">    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <script src="https://cdn.plot.ly/plotly-2.14.0.min.js"></script>
+</head>    
+
+<nav class="navbar navbar-custom">
+    <div class="navbar-left">
+        <a class="navbar-brand" href="/">Home</a>
+    </div>
+    <div class="navbar-center">
+        <a class="navbar-brand" href="/podium">Podium</a>
+        <a class="navbar-brand" href="/recent">Recent</a>
+        <a class="navbar-brand" href="/today">Today</a>
+        <a class="navbar-brand" href="/h2h">H2H</a>
+    </div>
+    <div class="navbar-right">
+        <a class="btn btn-primary" href="https://www.nytimes.com/puzzles/leaderboards/invite/341f3f73-133e-440d-b6ca-ca5b08a0d7c4">Join</a>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="mb-4 text-center">
+    <h1>Statistics for {{ username }}</h1>
+    <h2>Percentiles (Excluding Saturdays)</h2>
+    <div class="statistics-row">
+        <div class="statistic"><strong>10th Percentile:</strong> {{ data.percentiles[0]|convert_time_to_mm_ss }}</div>
+        <div class="statistic"><strong>25th Percentile:</strong> {{ data.percentiles[1]|convert_time_to_mm_ss }}</div>
+        <div class="statistic"><strong>50th Percentile (Median):</strong> {{ data.percentiles[2]|convert_time_to_mm_ss }}</div>
+        <div class="statistic"><strong>75th Percentile:</strong> {{ data.percentiles[3]|convert_time_to_mm_ss }}</div>
+        <div class="statistic"><strong>90th Percentile:</strong> {{ data.percentiles[4]|convert_time_to_mm_ss }}</div>
+    </div>
+
+    <h2>Best Times</h2>
+    <div class="podium">
+        {% for entry in data.top_times %}
+            {% if loop.index == 1 %}
+                <div class="podium-item gold">
+            {% else if loop.index == 2 %}
+                <div class="podium-item silver">
+            {% else %}
+                <div class="podium-item bronze">
+            {% endif %}
+                    <p><strong>{{ entry.time|convert_time_to_mm_ss }}</strong></p>
+                    <p><a href="/history/{{ entry.date }}">{{ entry.date }}</a></p>
+                </div>
+        {% endfor %}
+    </div>
+        <h2>Times Plot</h1>
+        {{ plot_html|safe }}
+    </div>
+</div>

@@ -1,0 +1,9 @@
+name = "crosselo"
+main = "build/worker/shim.mjs"
+compatibility_date = "2023-06-28"
+
+[build]
+command = "cargo install -q worker-build && worker-build --release"
+
+[vars]
+SUPABASE_API_URL = "https://twyzufmqxsqoaqjidwbu.supabase.co/rest/v1"
