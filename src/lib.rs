@@ -200,8 +200,8 @@ async fn handle_h2h<T>(ctx: &RouteContext<T>) -> Result<Response> {
     };
 
     let h2h_data: HeadToHeadData = match fetch_h2h_data(
-        user1.to_string(),
-        user2.to_string(),
+        user1,
+        user2,
         ctx.secret("SUPABASE_API_URL")?.to_string(),
         ctx.secret("SUPABASE_API_KEY")?.to_string(),
     )
