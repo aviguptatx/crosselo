@@ -14,7 +14,7 @@ use database::{
 use models::HeadToHeadData;
 use templates::{
     HeadToHeadTemplate, HistoryTemplate, LeaderboardTemplate, PodiumTemplate, RecentTemplate,
-    TodayTemplate, UserTemplate,
+    TodayTemplate, UserTemplate, CSS_STYLES,
 };
 use util::{fetch_live_leaderboard, generate_plot_html};
 
@@ -24,15 +24,9 @@ use worker::*;
 async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     let router = Router::new();
     router
-        .get_async(
-            "/",
-            |_req, ctx| async move { handle_index(&ctx, "all").await },
-        )
-        .get_async("/index/:data_source", |_req, ctx| async move {
-            let Some(data_source) = ctx.param("data_source") else {
-                return Response::error("Couldn't process data source parameter", 400);
-            };
-            handle_index(&ctx, data_source).await
+        .get_async("/", |_req, ctx| async move { handle_index(&ctx).await })
+        .get_async("/index/:db_name", |_req, ctx| async move {
+            handle_index(&ctx).await
         })
         .get_async(
             "/podium",
@@ -52,99 +46,25 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
             "/recent",
             |_req, ctx| async move { handle_recent(&ctx).await },
         )
-        .get_async("/h2h", |_req, ctx| async move {
-            handle_h2h(&ctx, None, None).await
-        })
+        .get_async("/h2h", |_req, ctx| async move { handle_h2h(&ctx).await })
         .get_async("/h2h/:user1/:user2", |_req, ctx| async move {
-            let (user1, user2) = match (ctx.param("user1"), ctx.param("user2")) {
-                (Some(u1), Some(u2)) => (u1.replace("%20", " "), u2.replace("%20", " ")),
-                _ => return Response::error("Couldn't process h2h user parameters", 400),
-            };
-            handle_h2h(&ctx, Some(user1), Some(user2)).await
+            handle_h2h(&ctx).await
         })
         .get_async("/styles/styles.css", |_req, _ctx| async move {
-            Response::ok(
-                ".navbar-custom {
-                background-color: #ffffff;
-                padding: 10px 20px;
-            }
-            
-            .navbar-brand {
-                font-size: 17px;
-            }
-            
-            .btn-primary {
-                font-size: 17px;
-                background-color: #007bff;
-                color: #fff;
-                border: none;
-                border-radius: 20px;
-                padding: 8px 20px;
-                text-decoration: none;
-            }
-            
-            .btn-primary:hover {
-                background-color: #0056b3;
-            }
-            
-            
-            @media (max-width: 768px) {
-                .navbar-brand {
-                    font-size: 12px;
-                }
-            
-                .btn-primary {
-                    font-size: 12px;
-                }
-            }
-            
-            .statistics-row {
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: space-around;
-                margin-bottom: 20px;
-            }
-            
-            .statistic {
-                margin: 0 20px;
-                text-align: center;
-            }
-            
-            .podium {
-                display: flex;
-                justify-content: space-around;
-                margin-top: 20px;
-            }
-            
-            .podium-item {
-                border: 1px solid #ddd;
-                padding: 10px;
-                margin-bottom: 10px;
-                border-radius: 5px;
-                background-color: #fff;
-                text-align: center;
-            }
-            
-            .podium-item.gold {
-                background-color: gold;
-            }
-            
-            .podium-item.silver {
-                background-color: silver;
-            }
-            
-            .podium-item.bronze {
-                background-color: #CD7F32;
-            }",
-            )
+            Response::ok(CSS_STYLES)
         })
         .run(req, env)
         .await
 }
 
-async fn handle_index<T>(ctx: &RouteContext<T>, data_source: &str) -> Result<Response> {
+async fn handle_index<T>(ctx: &RouteContext<T>) -> Result<Response> {
+    let db_name = match ctx.param("db_name") {
+        Some(str) => str,
+        None => "all",
+    };
+
     let Ok(leaderboard_entries) = fetch_leaderboard_from_db(
-        data_source,
+        db_name,
         ctx.secret("SUPABASE_API_URL")?.to_string(),
         ctx.secret("SUPABASE_API_KEY")?.to_string(),
     )
@@ -255,11 +175,7 @@ async fn handle_recent<T>(ctx: &RouteContext<T>) -> Result<Response> {
     Response::from_html(RecentTemplate { dates }.render().unwrap())
 }
 
-async fn handle_h2h<T>(
-    ctx: &RouteContext<T>,
-    opt_user1: Option<String>,
-    opt_user2: Option<String>,
-) -> Result<Response> {
+async fn handle_h2h<T>(ctx: &RouteContext<T>) -> Result<Response> {
     let Ok(users) = fetch_usernames_sorted_by_elo(
         ctx.secret("SUPABASE_API_URL")?.to_string(),
         ctx.secret("SUPABASE_API_KEY")?.to_string(),
@@ -269,15 +185,18 @@ async fn handle_h2h<T>(
         return Response::error("Couldn't fetch usernames from database", 500);
     };
 
-    let (Some(user1), Some(user2)) = (opt_user1, opt_user2) else {
-        return Response::from_html(
-            HeadToHeadTemplate {
-                users,
-                ..Default::default()
-            }
-            .render()
-            .unwrap(),
-        );
+    let (user1, user2) = match (ctx.param("user1"), ctx.param("user2")) {
+        (Some(u1), Some(u2)) => (u1.replace("%20", " "), u2.replace("%20", " ")),
+        _ => {
+            return Response::from_html(
+                HeadToHeadTemplate {
+                    users,
+                    ..Default::default()
+                }
+                .render()
+                .unwrap(),
+            )
+        }
     };
 
     let h2h_data: HeadToHeadData = match fetch_h2h_data(

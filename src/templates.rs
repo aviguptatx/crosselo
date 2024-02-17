@@ -60,3 +60,65 @@ pub struct HeadToHeadTemplate {
     pub users: Vec<String>,
     pub data: HeadToHeadData,
 }
+
+pub const CSS_STYLES: &str = "
+.navbar-custom {
+    background-color: #ffffff;
+    padding: 10px 20px;
+}
+.navbar-brand {
+    font-size: 17px;
+}
+.btn-primary {
+    font-size: 17px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 20px;
+    text-decoration: none;
+}
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+@media (max-width: 768px) {
+    .navbar-brand {
+        font-size: 12px;
+   }
+    .btn-primary {
+        font-size: 12px;
+   }
+}
+.statistics-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    margin-bottom: 20px;
+}
+.statistic {
+    margin: 0 20px;
+    text-align: center;
+}
+.podium {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+}
+.podium-item {
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    background-color: #fff;
+    text-align: center;
+}
+.podium-item.gold {
+    background-color: gold;
+}
+.podium-item.silver {
+    background-color: silver;
+}
+.podium-item.bronze {
+    background-color: #CD7F32;
+}
+";
