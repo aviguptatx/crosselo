@@ -1,0 +1,30 @@
+name: Update Database
+
+on:
+  workflow_dispatch:
+  schedule:
+    # At 2 AM UTC from Tuesday to Saturday (9 PM EST / 10 PM EDT Monday-Friday)
+    - cron: '0 2 * * 2-6'
+    # At 10 PM UTC on Saturday (5 PM EST / 6 PM EDT Saturday)
+    - cron: '0 23 * * 6'
+    # At 10 PM UTC on Sunday (5 PM EST / 6 PM EDT Sunday)
+    - cron: '0 23 * * 0'
+
+jobs:
+  update_database:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_API_KEY: ${{ secrets.SUPABASE_API_KEY }}
+      SUPABASE_API_URL: ${{ secrets.SUPABASE_API_URL }}
+      NYT_S_TOKEN: ${{ secrets.NYT_S_TOKEN }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.x
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt
+      - name: Update database
+        run: python scripts/update_db.py
