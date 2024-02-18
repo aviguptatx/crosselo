@@ -17,7 +17,7 @@ use templates::{
     HeadToHeadTemplate, HistoryTemplate, LeaderboardTemplate, PodiumTemplate, RecentTemplate,
     TodayTemplate, UserTemplate, CSS_STYLES,
 };
-use util::{fetch_live_leaderboard, generate_plot_html};
+use util::{fetch_live_leaderboard, generate_box_plot_html, generate_scatter_plot_html};
 
 use worker::{event, Context, Env, Request, Response, Result, RouteContext, Router};
 
@@ -103,12 +103,14 @@ async fn handle_user<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<Res
         return Response::error("Couldn't fetch user data from database", 500);
     };
 
-    let plot_html = generate_plot_html(vec![&mut data.all_times]);
+    let scatter_plot_html = generate_scatter_plot_html(vec![&mut data.all_times]);
+    let box_plot_html = generate_box_plot_html(vec![&mut data.times_excluding_saturday]);
 
     Response::from_html(
         UserTemplate {
             username: username.to_string(),
-            plot_html,
+            scatter_plot_html,
+            box_plot_html,
             data,
         }
         .render()
@@ -185,7 +187,8 @@ async fn handle_h2h<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<Resp
         return Response::error("Couldn't fetch user2 data from database", 500);
     };
 
-    let plot_html = generate_plot_html(vec![&mut user1_data.all_times, &mut user2_data.all_times]);
+    let box_plot_html =
+        generate_box_plot_html(vec![&mut user1_data.all_times, &mut user2_data.all_times]);
 
     let h2h_data: HeadToHeadData = match fetch_h2h_data(user1.clone(), user2.clone(), client).await
     {
@@ -203,7 +206,7 @@ async fn handle_h2h<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<Resp
             populated: true,
             users,
             data: h2h_data,
-            plot_html,
+            box_plot_html,
         }
         .render()
         .unwrap(),

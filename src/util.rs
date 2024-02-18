@@ -1,20 +1,69 @@
 use crate::models::ResultEntry;
 use linreg::linear_regression;
-use plotly::common::{Mode, Title};
-use plotly::layout::Axis;
-use plotly::{Layout, Plot, Scatter};
+use plotly::box_plot::BoxPoints;
+use plotly::color::Rgb;
+use plotly::common::{Line, Marker, Mode, Title};
+use plotly::layout::{Axis, RangeSelector, RangeSlider, SelectorButton, SelectorStep, StepMode};
+use plotly::{BoxPlot, Layout, Plot, Scatter};
 use serde_json::Value;
 use std::error::Error;
 
-pub fn generate_plot_html(all_entries: Vec<&mut Vec<ResultEntry>>) -> String {
+fn get_average_time(entries: &Vec<ResultEntry>) -> i32 {
+    entries.iter().map(|entry| entry.time).sum::<i32>() / entries.len() as i32
+}
+
+pub fn generate_scatter_plot_html(all_entries: Vec<&mut Vec<ResultEntry>>) -> String {
+    let average_time = all_entries
+        .iter()
+        .map(|user_entries| get_average_time(user_entries))
+        .max()
+        .unwrap_or(0);
     let layout = Layout::new()
-        .x_axis(Axis::new().title(Title::from("Date")))
-        .y_axis(Axis::new().title(Title::from("Time (seconds)")))
+        .title(Title::new("Line Plot"))
+        .x_axis(
+            Axis::new()
+                .range_slider(RangeSlider::new().visible(true))
+                .range_selector(RangeSelector::new().buttons(vec![
+                    SelectorButton::new()
+                        .count(1)
+                        .label("1M")
+                        .step(SelectorStep::Month)
+                        .step_mode(StepMode::Backward),
+                    SelectorButton::new()
+                        .count(6)
+                        .label("6M")
+                        .step(SelectorStep::Month)
+                        .step_mode(StepMode::Backward),
+                    SelectorButton::new()
+                        .count(1)
+                        .label("YTD")
+                        .step(SelectorStep::Year)
+                        .step_mode(StepMode::ToDate),
+                    SelectorButton::new()
+                        .count(1)
+                        .label("1Y")
+                        .step(SelectorStep::Year)
+                        .step_mode(StepMode::Backward),
+                    SelectorButton::new().label("MAX").step(SelectorStep::All),
+                ]))
+                .title(Title::from("Date")),
+        )
+        .y_axis(
+            Axis::new()
+                .title(Title::from("Time (seconds)"))
+                .grid_color(Rgb::new(243, 243, 243))
+                .range(vec![0, 2 * average_time]),
+        )
+        .show_legend(false)
         .auto_size(true);
     let mut plot = Plot::new();
 
     for user_entries in all_entries {
         user_entries.sort_by(|a, b| a.date.cmp(&b.date));
+        let username = match user_entries.first() {
+            Some(entry) => &entry.username,
+            _ => return String::from("Need more times before we can plot!"),
+        };
 
         let dates: Vec<String> = user_entries
             .iter()
@@ -30,19 +79,16 @@ pub fn generate_plot_html(all_entries: Vec<&mut Vec<ResultEntry>>) -> String {
             _ => return String::from("Need more times before we can plot!"),
         };
 
-        let username = match user_entries.first() {
-            Some(entry) => &entry.username,
-            _ => return String::from("Need more times before we can plot!"),
-        };
-
         let trendline_values: Vec<f64> = x.iter().map(|&i| slope.mul_add(i, intercept)).collect();
 
         let trace_times = Scatter::new(dates.clone(), times)
             .name(format!("{username}'s Times"))
-            .mode(Mode::Lines);
+            .mode(Mode::Lines)
+            .opacity(0.5);
         let trace_trendline = Scatter::new(dates, trendline_values)
             .name(format!("{username}'s Trendline"))
-            .mode(Mode::Lines);
+            .mode(Mode::Lines)
+            .opacity(0.5);
 
         plot.add_trace(trace_times);
         plot.add_trace(trace_trendline);
@@ -50,7 +96,57 @@ pub fn generate_plot_html(all_entries: Vec<&mut Vec<ResultEntry>>) -> String {
 
     plot.set_layout(layout);
 
-    plot.to_inline_html(None)
+    plot.to_inline_html(Some("scatter-plot"))
+}
+
+pub fn generate_box_plot_html(all_entries: Vec<&mut Vec<ResultEntry>>) -> String {
+    let average_time = all_entries
+        .iter()
+        .map(|user_entries| get_average_time(user_entries))
+        .max()
+        .unwrap_or(0);
+    let layout = Layout::new()
+        .title(Title::new("Boxplot (Excluding Saturdays)"))
+        .y_axis(
+            Axis::new()
+                .title(Title::from("Time (seconds)"))
+                .show_grid(true)
+                .zero_line(true)
+                .dtick(10.0)
+                .grid_color(Rgb::new(200, 200, 200))
+                .grid_width(1)
+                .zero_line_color(Rgb::new(200, 200, 200))
+                .zero_line_width(2)
+                .range(vec![0, 3 * average_time]),
+        )
+        .paper_background_color(Rgb::new(255, 255, 255))
+        .plot_background_color(Rgb::new(255, 255, 255))
+        .show_legend(false)
+        .auto_size(true);
+
+    let mut plot = Plot::new();
+
+    for user_entries in all_entries {
+        let username = match user_entries.first() {
+            Some(entry) => &entry.username,
+            _ => return String::from("Need more times before we can plot!"),
+        };
+
+        let times: Vec<i32> = user_entries.iter().map(|entry| entry.time).collect();
+
+        let trace = BoxPlot::new(times)
+            .name(username)
+            .box_points(BoxPoints::All)
+            .jitter(0.6)
+            .whisker_width(0.2)
+            .marker(Marker::new().size(6))
+            .line(Line::new().width(2.0));
+        plot.add_trace(trace);
+    }
+
+    plot.set_layout(layout);
+
+    plot.to_inline_html(Some("box-plot"))
 }
 
 pub fn compute_percentiles(

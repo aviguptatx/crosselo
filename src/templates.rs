@@ -24,7 +24,8 @@ pub struct LeaderboardTemplate {
 #[template(path = "user.html")]
 pub struct UserTemplate {
     pub username: String,
-    pub plot_html: String,
+    pub scatter_plot_html: String,
+    pub box_plot_html: String,
     pub data: UserData,
 }
 
@@ -59,7 +60,7 @@ pub struct HeadToHeadTemplate {
     pub populated: bool,
     pub users: Vec<String>,
     pub data: HeadToHeadData,
-    pub plot_html: String,
+    pub box_plot_html: String,
 }
 
 pub const CSS_STYLES: &str = "

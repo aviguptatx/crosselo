@@ -126,6 +126,7 @@ pub async fn fetch_user_data(
     Ok(UserData {
         percentiles,
         all_times,
+        times_excluding_saturday,
         top_times,
     })
 }

@@ -29,15 +29,6 @@
 <div class="container">
     <div class="mb-4 text-center">
     <h1>Statistics for {{ username }}</h1>
-    <h2>Percentiles (Excluding Saturdays)</h2>
-    <div class="statistics-row">
-        <div class="statistic"><strong>10th Percentile:</strong> {{ data.percentiles[0]|convert_time_to_mm_ss }}</div>
-        <div class="statistic"><strong>25th Percentile:</strong> {{ data.percentiles[1]|convert_time_to_mm_ss }}</div>
-        <div class="statistic"><strong>50th Percentile (Median):</strong> {{ data.percentiles[2]|convert_time_to_mm_ss }}</div>
-        <div class="statistic"><strong>75th Percentile:</strong> {{ data.percentiles[3]|convert_time_to_mm_ss }}</div>
-        <div class="statistic"><strong>90th Percentile:</strong> {{ data.percentiles[4]|convert_time_to_mm_ss }}</div>
-    </div>
-
     <h2>Best Times</h2>
     <div class="podium">
         {% for entry in data.top_times %}
@@ -53,7 +44,14 @@
                 </div>
         {% endfor %}
     </div>
-        <h2>Times Plot</h1>
-        {{ plot_html|safe }}
+
+    <h2>Plots</h2>
+    <div class="row">
+        <div class="col-md-6">
+            {{ box_plot_html|safe }}
+        </div>
+        <div class="col-md-6">
+            {{ scatter_plot_html|safe }}
+        </div>
     </div>
 </div>
