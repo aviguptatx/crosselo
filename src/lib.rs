@@ -182,7 +182,7 @@ async fn handle_h2h<T>(ctx: &RouteContext<T>) -> Result<Response> {
     )
     .await
     else {
-        return Response::error("Couldn't fetch usernames from database", 500);
+        return Response::error("Couldn't fetch usernames from database!", 500);
     };
 
     let (user1, user2) = match (ctx.param("user1"), ctx.param("user2")) {

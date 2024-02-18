@@ -4,7 +4,9 @@ use serde_json::Value;
 use std::cmp::Ordering;
 use std::error::Error;
 
-use crate::models::{HeadToHeadData, LeaderboardEntry, ResultEntry, UserData, UsernameData};
+use crate::models::{
+    HeadToHeadData, LeaderboardEntry, ResultEntry, UserData, UsernameData, Wrapper,
+};
 use crate::util::compute_percentiles;
 
 fn client(url: String, key: String) -> Postgrest {
@@ -176,11 +178,11 @@ pub async fn fetch_h2h_data(
         .text()
         .await?;
 
-    let h2h_data: Vec<HeadToHeadData> = serde_json::from_str(&body)
-        .map_err(|e| format!("JSON parsing error: {e}, body: {body}"))?;
-    let stats = h2h_data.first().ok_or("H2H RPC returned empty array")?;
+    let h2h_data: HeadToHeadData = serde_json::from_str(&body)
+        .map_err(|e| format!("JSON parsing error: {}, body: {}", e, body))
+        .and_then(|wrapper: Wrapper<HeadToHeadData>| Ok(wrapper.inner))?;
 
-    let (faster_user, slower_user) = if stats.avg_time_difference < 0.0 {
+    let (faster_user, slower_user) = if h2h_data.avg_time_difference < 0.0 {
         (&user1, &user2)
     } else {
         (&user2, &user1)
@@ -189,7 +191,7 @@ pub async fn fetch_h2h_data(
     let time_diff_description = format!(
         "On average, {} is {:.1} seconds faster than {}.",
         faster_user,
-        stats.avg_time_difference.abs(),
+        h2h_data.avg_time_difference.abs(),
         slower_user
     );
 
@@ -197,6 +199,6 @@ pub async fn fetch_h2h_data(
         user1,
         user2,
         time_diff_description,
-        ..*stats
+        ..h2h_data
     })
 }
