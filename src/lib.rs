@@ -200,16 +200,18 @@ async fn handle_h2h<T>(ctx: &RouteContext<T>) -> Result<Response> {
     };
 
     let h2h_data: HeadToHeadData = match fetch_h2h_data(
-        user1,
-        user2,
+        user1.clone(),
+        user2.clone(),
         ctx.secret("SUPABASE_API_URL")?.to_string(),
         ctx.secret("SUPABASE_API_KEY")?.to_string(),
     )
     .await
     {
         Ok(data) => data,
-        _ => models::HeadToHeadData {
-            time_diff_description: String::from("Couldn't fetch head to head stats!"),
+        Err(e) => models::HeadToHeadData {
+            user1,
+            user2,
+            time_diff_description: format!("Couldn't fetch head to head stats! Error: {e}"),
             ..Default::default()
         },
     };

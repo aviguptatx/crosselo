@@ -22,14 +22,18 @@ pub struct UsernameData {
     pub username: String,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default, Deserialize)]
 pub struct HeadToHeadData {
+    #[serde(skip_deserializing)]
     pub user1: String,
+    #[serde(skip_deserializing)]
     pub user2: String,
     pub wins_user1: i32,
     pub wins_user2: i32,
     pub ties: i32,
     pub total_matches: i32,
+    pub avg_time_difference: f64,
+    #[serde(skip_deserializing)]
     pub time_diff_description: String,
 }
 
