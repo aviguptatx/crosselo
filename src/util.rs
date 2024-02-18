@@ -8,11 +8,11 @@ use plotly::{BoxPlot, Layout, Plot, Scatter};
 use serde_json::Value;
 use std::error::Error;
 
-fn get_average_time(entries: &Vec<ResultEntry>) -> i32 {
+fn get_average_time(entries: &[ResultEntry]) -> i32 {
     entries.iter().map(|entry| entry.time).sum::<i32>() / entries.len() as i32
 }
 
-pub fn generate_scatter_plot_html(all_entries: Vec<&mut Vec<ResultEntry>>) -> String {
+pub fn generate_scatter_plot_html(all_entries: Vec<&mut [ResultEntry]>) -> String {
     let average_time = all_entries
         .iter()
         .map(|user_entries| get_average_time(user_entries))
@@ -59,11 +59,11 @@ pub fn generate_scatter_plot_html(all_entries: Vec<&mut Vec<ResultEntry>>) -> St
     let mut plot = Plot::new();
 
     for user_entries in all_entries {
+        if user_entries.is_empty() {
+            return String::from("Need more times before we can plot!");
+        }
+
         user_entries.sort_by(|a, b| a.date.cmp(&b.date));
-        let username = match user_entries.first() {
-            Some(entry) => &entry.username,
-            _ => return String::from("Need more times before we can plot!"),
-        };
 
         let dates: Vec<String> = user_entries
             .iter()
@@ -82,13 +82,11 @@ pub fn generate_scatter_plot_html(all_entries: Vec<&mut Vec<ResultEntry>>) -> St
         let trendline_values: Vec<f64> = x.iter().map(|&i| slope.mul_add(i, intercept)).collect();
 
         let trace_times = Scatter::new(dates.clone(), times)
-            .name(format!("{username}'s Times"))
             .mode(Mode::Lines)
-            .opacity(0.5);
+            .opacity(0.7);
         let trace_trendline = Scatter::new(dates, trendline_values)
-            .name(format!("{username}'s Trendline"))
             .mode(Mode::Lines)
-            .opacity(0.5);
+            .opacity(0.7);
 
         plot.add_trace(trace_times);
         plot.add_trace(trace_trendline);
