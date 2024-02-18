@@ -59,6 +59,7 @@ pub struct HeadToHeadTemplate {
     pub populated: bool,
     pub users: Vec<String>,
     pub data: HeadToHeadData,
+    pub plot_html: String,
 }
 
 pub const CSS_STYLES: &str = "

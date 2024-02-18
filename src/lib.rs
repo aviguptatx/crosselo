@@ -18,7 +18,7 @@ use templates::{
 };
 use util::{fetch_live_leaderboard, generate_plot_html};
 
-use worker::*;
+use worker::{event, Context, Env, Request, Response, Result, RouteContext, Router};
 
 #[event(fetch)]
 async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
@@ -108,7 +108,7 @@ async fn handle_user<T>(ctx: &RouteContext<T>) -> Result<Response> {
         return Response::error("Couldn't fetch user data from database", 500);
     };
 
-    let plot_html = generate_plot_html(&mut data.all_times);
+    let plot_html = generate_plot_html(vec![&mut data.all_times]);
 
     Response::from_html(
         UserTemplate {
@@ -199,6 +199,27 @@ async fn handle_h2h<T>(ctx: &RouteContext<T>) -> Result<Response> {
         }
     };
 
+    let Ok(mut user1_data) = fetch_user_data(
+        &user1,
+        ctx.secret("SUPABASE_API_URL")?.to_string(),
+        ctx.secret("SUPABASE_API_KEY")?.to_string(),
+    )
+    .await
+    else {
+        return Response::error("Couldn't fetch user1 data from database", 500);
+    };
+    let Ok(mut user2_data) = fetch_user_data(
+        &user2,
+        ctx.secret("SUPABASE_API_URL")?.to_string(),
+        ctx.secret("SUPABASE_API_KEY")?.to_string(),
+    )
+    .await
+    else {
+        return Response::error("Couldn't fetch user2 data from database", 500);
+    };
+
+    let plot_html = generate_plot_html(vec![&mut user1_data.all_times, &mut user2_data.all_times]);
+
     let h2h_data: HeadToHeadData = match fetch_h2h_data(
         user1.clone(),
         user2.clone(),
@@ -221,6 +242,7 @@ async fn handle_h2h<T>(ctx: &RouteContext<T>) -> Result<Response> {
             populated: true,
             users,
             data: h2h_data,
+            plot_html,
         }
         .render()
         .unwrap(),

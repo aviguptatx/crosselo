@@ -6,38 +6,50 @@ use plotly::{Layout, Plot, Scatter};
 use serde_json::Value;
 use std::error::Error;
 
-pub fn generate_plot_html(all_entries: &mut [ResultEntry]) -> String {
-    all_entries.sort_by(|a, b| a.date.cmp(&b.date));
-    let dates: Vec<String> = all_entries.iter().map(|entry| entry.date.clone()).collect();
-
-    let times: Vec<i32> = all_entries.iter().map(|entry| entry.time).collect();
-
+pub fn generate_plot_html(all_entries: Vec<&mut Vec<ResultEntry>>) -> String {
     let layout = Layout::new()
         .x_axis(Axis::new().title(Title::from("Date")))
         .y_axis(Axis::new().title(Title::from("Time (seconds)")))
         .auto_size(true);
     let mut plot = Plot::new();
 
-    let x: Vec<f64> = (0..dates.len()).map(|i| i as f64).collect();
-    let y: Vec<f64> = times.iter().map(|i| *i as f64).collect();
+    for user_entries in all_entries {
+        user_entries.sort_by(|a, b| a.date.cmp(&b.date));
 
-    let (slope, intercept): (f64, f64) = match linear_regression(&x, &y) {
-        Ok((slope, intercept)) => (slope, intercept),
-        _ => return String::from("Need more times before we can plot!"),
-    };
+        let dates: Vec<String> = user_entries
+            .iter()
+            .map(|entry| entry.date.clone())
+            .collect();
+        let times: Vec<i32> = user_entries.iter().map(|entry| entry.time).collect();
 
-    let trendline_values: Vec<f64> = x.iter().map(|&i| slope.mul_add(i, intercept)).collect();
+        let x: Vec<f64> = (0..dates.len()).map(|i| i as f64).collect();
+        let y: Vec<f64> = times.iter().map(|i| *i as f64).collect();
 
-    let trace_times = Scatter::new(dates.clone(), times)
-        .name("Times")
-        .mode(Mode::Lines);
-    let trace_trendline = Scatter::new(dates, trendline_values)
-        .name("Trendline")
-        .mode(Mode::Lines);
+        let (slope, intercept): (f64, f64) = match linear_regression(&x, &y) {
+            Ok((slope, intercept)) => (slope, intercept),
+            _ => return String::from("Need more times before we can plot!"),
+        };
+
+        let username = match user_entries.first() {
+            Some(entry) => &entry.username,
+            _ => return String::from("Need more times before we can plot!"),
+        };
+
+        let trendline_values: Vec<f64> = x.iter().map(|&i| slope.mul_add(i, intercept)).collect();
+
+        let trace_times = Scatter::new(dates.clone(), times)
+            .name(format!("{username}'s Times"))
+            .mode(Mode::Lines);
+        let trace_trendline = Scatter::new(dates, trendline_values)
+            .name(format!("{username}'s Trendline"))
+            .mode(Mode::Lines);
+
+        plot.add_trace(trace_times);
+        plot.add_trace(trace_trendline);
+    }
 
     plot.set_layout(layout);
-    plot.add_trace(trace_times);
-    plot.add_trace(trace_trendline);
+
     plot.to_inline_html(None)
 }
 

@@ -179,8 +179,8 @@ pub async fn fetch_h2h_data(
         .await?;
 
     let h2h_data: HeadToHeadData = serde_json::from_str(&body)
-        .map_err(|e| format!("JSON parsing error: {}, body: {}", e, body))
-        .and_then(|wrapper: Wrapper<HeadToHeadData>| Ok(wrapper.inner))?;
+        .map_err(|e| format!("JSON parsing error: {e}, body: {body}"))
+        .map(|wrapper: Wrapper<HeadToHeadData>| wrapper.inner)?;
 
     let (faster_user, slower_user) = if h2h_data.avg_time_difference < 0.0 {
         (&user1, &user2)
