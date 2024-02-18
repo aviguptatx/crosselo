@@ -9,16 +9,11 @@ use crate::models::{
 };
 use crate::util::compute_percentiles;
 
-fn client(url: String, key: String) -> Postgrest {
-    Postgrest::new(url).insert_header("apikey", key)
-}
-
 pub async fn fetch_results(
     date: &str,
-    url: String,
-    key: String,
+    client: &Postgrest,
 ) -> Result<Vec<ResultEntry>, Box<dyn Error>> {
-    let body = client(url, key)
+    let body = client
         .from("results_rust")
         .select("*")
         .eq("date", date)
@@ -35,10 +30,9 @@ pub async fn fetch_results(
 }
 
 pub async fn fetch_most_recent_crossword_date(
-    url: String,
-    key: String,
+    client: &Postgrest,
 ) -> Result<NaiveDate, Box<dyn Error>> {
-    let body = client(url, key)
+    let body = client
         .from("results_rust")
         .select("date")
         .order("date.desc")
@@ -61,10 +55,9 @@ pub async fn fetch_most_recent_crossword_date(
 }
 
 pub async fn fetch_usernames_sorted_by_elo(
-    url: String,
-    key: String,
+    client: &Postgrest,
 ) -> Result<Vec<String>, Box<dyn Error>> {
-    let body = client(url, key)
+    let body = client
         .from("all")
         .select("username")
         .order("elo.desc")
@@ -81,11 +74,8 @@ pub async fn fetch_usernames_sorted_by_elo(
         .collect())
 }
 
-pub async fn fetch_podium_data(
-    url: String,
-    key: String,
-) -> Result<Vec<ResultEntry>, Box<dyn Error>> {
-    let body = client(url, key)
+pub async fn fetch_podium_data(client: &Postgrest) -> Result<Vec<ResultEntry>, Box<dyn Error>> {
+    let body = client
         .from("results_rust")
         .select("*")
         .order("time")
@@ -104,11 +94,10 @@ pub async fn fetch_podium_data(
 
 pub async fn fetch_user_data(
     username: &str,
-    url: String,
-    key: String,
+    client: &Postgrest,
 ) -> Result<UserData, Box<dyn Error>> {
     let percentiles = vec![10, 25, 50, 75, 90];
-    let body = client(url, key)
+    let body = client
         .from("results_rust")
         .select("*")
         .eq("username", username)
@@ -143,10 +132,9 @@ pub async fn fetch_user_data(
 
 pub async fn fetch_leaderboard_from_db(
     db_name: &str,
-    url: String,
-    key: String,
+    client: &Postgrest,
 ) -> Result<Vec<LeaderboardEntry>, Box<dyn Error>> {
-    let body = client(url, key)
+    let body = client
         .from(db_name)
         .select("*")
         .execute()
@@ -165,10 +153,9 @@ pub async fn fetch_leaderboard_from_db(
 pub async fn fetch_h2h_data(
     user1: String,
     user2: String,
-    url: String,
-    key: String,
+    client: &Postgrest,
 ) -> Result<HeadToHeadData, Box<dyn Error>> {
-    let body = client(url, key)
+    let body = client
         .rpc(
             "get_h2h_stats",
             format!("{{\"user1\": \"{user1}\", \"user2\": \"{user2}\"}}"),
