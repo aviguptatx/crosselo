@@ -1,12 +1,12 @@
-use crate::models::ResultEntry;
 use linreg::linear_regression;
 use plotly::box_plot::BoxPoints;
 use plotly::color::Rgb;
 use plotly::common::{Line, Marker, Mode, Title};
 use plotly::layout::{Axis, RangeSelector, RangeSlider, SelectorButton, SelectorStep, StepMode};
 use plotly::{BoxPlot, Layout, Plot, Scatter};
-use serde_json::Value;
 use std::error::Error;
+
+use crate::models::{NytApiResponse, ResultEntry};
 
 fn get_average_time(entries: &[ResultEntry]) -> i32 {
     entries.iter().map(|entry| entry.time).sum::<i32>() / entries.len() as i32
@@ -173,30 +173,28 @@ pub async fn fetch_live_leaderboard(token: String) -> Result<Vec<ResultEntry>, B
         .text()
         .await?;
 
-    let v: Value = serde_json::from_str(&body[..])?;
+    let api_response: NytApiResponse = serde_json::from_str(&body)?;
 
     let mut result_entries: Vec<ResultEntry> = Vec::new();
 
-    for entry in v["data"].as_array().ok_or("NYT API had no results")? {
-        let rank: i32 = match entry["rank"]
-            .as_str()
-            .and_then(|rank_str| rank_str.parse::<i32>().ok())
-        {
-            Some(rank) => rank,
-            None => continue,
+    let mut prev_rank: Option<i32> = None;
+    for entry in api_response.data {
+        let Some(time) = entry.score.map(|score| score.seconds_spent_solving) else {
+            break; // All future entries are incomplete solves, so we can stop here
         };
 
+        let rank: i32 = match entry.rank.and_then(|rank_str| rank_str.parse::<i32>().ok()) {
+            Some(rank) => rank,
+            None => prev_rank.ok_or("err")?, // This is a tie; NYT API doesn't provide rank for ties
+        };
+        prev_rank = Some(rank);
+
         result_entries.push(ResultEntry {
-            time: entry["score"]["secondsSpentSolving"]
-                .as_i64()
-                .ok_or("Failed to serialize time into i64")? as i32,
-            username: entry["name"]
-                .as_str()
-                .ok_or("Failed to serialize most recent crossword date as string")?
-                .to_string(),
+            username: entry.name,
+            time,
             rank,
             ..Default::default()
-        });
+        })
     }
 
     Ok(result_entries)

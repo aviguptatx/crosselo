@@ -1,5 +1,23 @@
 use serde::Deserialize;
 
+#[derive(Debug, Deserialize)]
+pub struct NytApiResponse {
+    pub data: Vec<NytResultEntry>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct NytScore {
+    #[serde(rename = "secondsSpentSolving")]
+    pub seconds_spent_solving: i32,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct NytResultEntry {
+    pub name: String,
+    pub rank: Option<String>,
+    pub score: Option<NytScore>,
+}
+
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct ResultEntry {
     pub date: String,
