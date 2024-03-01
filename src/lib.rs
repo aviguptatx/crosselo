@@ -190,22 +190,14 @@ async fn handle_h2h<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<Resp
     let box_plot_html =
         generate_box_plot_html(vec![&mut user1_data.all_times, &mut user2_data.all_times]);
 
-    let h2h_data: HeadToHeadData = match fetch_h2h_data(user1.clone(), user2.clone(), client).await
-    {
-        Ok(data) => data,
-        Err(e) => models::HeadToHeadData {
-            user1,
-            user2,
-            time_diff_description: format!("Couldn't fetch head to head stats! Error: {e}"),
-            ..Default::default()
-        },
-    };
+    let data: Option<HeadToHeadData> = fetch_h2h_data(user1.clone(), user2.clone(), client)
+        .await
+        .ok();
 
     Response::from_html(
         HeadToHeadTemplate {
-            populated: true,
             users,
-            data: h2h_data,
+            data,
             box_plot_html,
         }
         .render()

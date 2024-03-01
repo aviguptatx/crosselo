@@ -57,9 +57,8 @@ pub struct TodayTemplate {
 #[derive(Template, Default)]
 #[template(path = "h2h.html")]
 pub struct HeadToHeadTemplate {
-    pub populated: bool,
     pub users: Vec<String>,
-    pub data: HeadToHeadData,
+    pub data: Option<HeadToHeadData>,
     pub box_plot_html: String,
 }
 

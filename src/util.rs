@@ -194,7 +194,7 @@ pub async fn fetch_live_leaderboard(token: String) -> Result<Vec<ResultEntry>, B
             time,
             rank,
             ..Default::default()
-        })
+        });
     }
 
     Ok(result_entries)

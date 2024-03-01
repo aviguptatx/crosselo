@@ -33,7 +33,12 @@
             <label for="user1Select">Select Player 1:</label>
             <select class="form-control" id="user1Select">
                 {% for user in users %}
-                    <option {% if user == data.user1.as_str() %} selected {% endif %}>{{ user }}</option>
+                    {% match data %}
+                        {% when Some with (some_data) %}
+                            <option {% if user == some_data.user1.as_str() %} selected {% endif %}>{{ user }}</option>
+                        {% when None %}
+                            <option>{{ user }}</option>
+                    {% endmatch %}
                 {% endfor %}
             </select>
         </div>
@@ -41,7 +46,12 @@
             <label for="user2Select">Select Player 2:</label>
             <select class="form-control" id="user2Select">
                 {% for user in users %}
-                    <option {% if user == data.user2.as_str() %} selected {% endif %}>{{ user }}</option>
+                    {% match data %}
+                        {% when Some with (some_data) %}
+                            <option {% if user == some_data.user2.as_str() %} selected {% endif %}>{{ user }}</option>
+                        {% when None %}
+                            <option>{{ user }}</option>
+                    {% endmatch %}
                 {% endfor %}
             </select>
         </div>
@@ -53,26 +63,28 @@
     </div>
 </div>
 
-{% if populated %}
-<div class="container mt-5">
-    <h2 class="text-center">Head to Head Stats</h2>
-    <div class="row">
-        <div class="col-md-12">
-            <div class="text-center">
-                {% if data.user1 == data.user2 %}
-                <p>Try selecting different players, silly.</p>
-                {% else %}
-                <p><span id="totalMatches"><strong>{{ data.user1 }}</strong> and <strong>{{ data.user2 }}</strong> have played <strong>{{ data.total_matches }}</strong> crossword(s) together.</span></p>
-                <p><span id="wins"></span> <strong>{{ data.user1 }}</strong> has <strong>{{ data.wins_user1 }}</strong> win(s) while <strong>{{ data.user2 }}</strong> has <strong>{{ data.wins_user2 }}</strong> win(s). They have <strong>{{ data.ties }}</strong> tie(s).</p>
-                <p><span id="avgTimeDiff"><strong>{{ data.time_diff_description }}</strong></span></p>
-                {% endif %}
+{% match data %}
+    {% when Some with (data) %}
+        <div class="container mt-5">
+            <h2 class="text-center">Head to Head Stats</h2>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="text-center">
+                        {% if data.user1 == data.user2 %}
+                        <p>Try selecting different players, silly.</p>
+                        {% else %}
+                        <p><span id="totalMatches"><strong>{{ data.user1 }}</strong> and <strong>{{ data.user2 }}</strong> have played <strong>{{ data.total_matches }}</strong> crossword(s) together.</span></p>
+                        <p><span id="wins"></span> <strong>{{ data.user1 }}</strong> has <strong>{{ data.wins_user1 }}</strong> win(s) while <strong>{{ data.user2 }}</strong> has <strong>{{ data.wins_user2 }}</strong> win(s). They have <strong>{{ data.ties }}</strong> tie(s).</p>
+                        <p><span id="avgTimeDiff"><strong>{{ data.time_diff_description }}</strong></span></p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+                {{ box_plot_html|safe }}
             </div>
         </div>
-    </div>
-        {{ box_plot_html|safe }}
-    </div>
-</div>
-{% endif %}
+    {% when None %}
+{% endmatch %}
 
 <script>
     function getHeadToHeadStats() {
