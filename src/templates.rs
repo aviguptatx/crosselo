@@ -1,6 +1,6 @@
 use askama::Template;
 
-use crate::models::{HeadToHeadData, LeaderboardEntry, ResultEntry, UserData};
+use crate::models::{HeadToHeadData, LeaderboardEntry, NytResultEntry, ResultEntry, UserData};
 
 mod filters {
     pub fn convert_time_to_mm_ss(seconds: &i32) -> ::askama::Result<String> {
@@ -11,6 +11,13 @@ mod filters {
 
     pub fn round(f: &f64) -> ::askama::Result<i32> {
         Ok(f.round() as i32)
+    }
+
+    pub fn unpack_time(score: &Option<crate::models::NytScore>) -> ::askama::Result<String> {
+        score.as_ref().map_or_else(
+            || Ok(String::from("--")),
+            |score| convert_time_to_mm_ss(&score.seconds_spent_solving),
+        )
     }
 }
 
@@ -51,7 +58,7 @@ pub struct RecentTemplate {
 #[derive(Template)]
 #[template(path = "today.html")]
 pub struct TodayTemplate {
-    pub data: Vec<ResultEntry>,
+    pub data: Vec<NytResultEntry>,
 }
 
 #[derive(Template, Default)]

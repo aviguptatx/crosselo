@@ -38,9 +38,9 @@
         <tbody>
             {% for entry in data %}
                 <tr>
-                    <td>{{ entry.rank }}</td>
-                    <td><a href="/user/{{ entry.username }}">{{ entry.username }}</a></td>
-                    <td>{{ entry.time|convert_time_to_mm_ss }}</td>
+                    <td>{% match entry.rank %} {% when Some with (rank) %} {{ rank }} {% when None %} {% endmatch %}</td>
+                    <td><a href="/user/{{ entry.name }}">{{ entry.name }}</a></td>
+                    <td>{{ entry.score|unpack_time }}</td>
                 </tr>
             {% endfor %}
         </tbody>
