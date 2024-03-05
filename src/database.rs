@@ -159,7 +159,10 @@ pub async fn fetch_h2h_data(
     let body = client
         .rpc(
             "get_h2h_stats",
-            format!("{{\"user1\": \"{user1}\", \"user2\": \"{user2}\"}}"),
+            serde_json::to_string(&serde_json::json!({
+                "user1": user1,
+                "user2": user2,
+            }))?,
         )
         .execute()
         .await?
@@ -170,17 +173,18 @@ pub async fn fetch_h2h_data(
         .map_err(|e| format!("JSON parsing error: {e}, body: {body}"))
         .map(|wrapper: Wrapper<HeadToHeadData>| wrapper.inner)?;
 
-    let (faster_user, slower_user) = if h2h_data.avg_time_difference < 0.0 {
-        (&user1, &user2)
+    let speed_verb = if h2h_data.avg_time_difference < 0.0 {
+        "faster"
     } else {
-        (&user2, &user1)
+        "slower"
     };
 
     let time_diff_description = format!(
-        "On average, {} is {:.1} seconds faster than {}.",
-        faster_user,
+        "On average, {} is {:.1} seconds {} than {}.",
+        user1,
         h2h_data.avg_time_difference.abs(),
-        slower_user
+        speed_verb,
+        user2,
     );
 
     Ok(HeadToHeadData {
