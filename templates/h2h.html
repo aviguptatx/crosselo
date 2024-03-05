@@ -26,12 +26,12 @@
     </div>
 </nav>
 
-<div class="container mt-5">
+<div class="container mt-5 text-center">
     <h1 class="mb-4 text-center">Head to Head Comparison</h1>
     <div class="row mt-4">
         <div class="col-md-6">
             <label style="color: #1f77b4;" for="user1Select">Select Player 1:</label>
-            <select style="color: #1f77b4;" class="form-control" id="user1Select">
+            <select style="color: #1f77b4; text-align: center;" class="form-control" id="user1Select">
                 {% for user in users %}
                     {% match data %}
                         {% when Some with (some_data) %}
@@ -44,7 +44,7 @@
         </div>
         <div class="col-md-6">
             <label style="color: #ff7f0e;" for="user2Select">Select Player 2:</label>
-            <select style="color: #ff7f0e;" class="form-control" id="user2Select">
+            <select style="color: #ff7f0e; text-align: center;" class="form-control" id="user2Select">
                 {% for user in users %}
                     {% match data %}
                         {% when Some with (some_data) %}
