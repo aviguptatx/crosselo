@@ -70,10 +70,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
 }
 
 async fn handle_index<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<Response> {
-    let db_name = match ctx.param("db_name") {
-        Some(str) => str,
-        None => "all",
-    };
+    let db_name = ctx.param("db_name").map_or("all", |str| str);
 
     let Ok(leaderboard_entries) = fetch_leaderboard_from_db(db_name, client).await else {
         return Response::error("Couldn't fetch leaderboard from database", 500);
@@ -103,8 +100,16 @@ async fn handle_user<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<Res
         return Response::error("Couldn't fetch user data from database", 500);
     };
 
-    let scatter_plot_html = generate_scatter_plot_html(vec![&mut data.all_times]);
-    let box_plot_html = generate_box_plot_html(vec![&mut data.times_excluding_saturday]);
+    let scatter_plot_html = generate_scatter_plot_html(vec![&mut data.all_times]).map_or_else(
+        |_| String::from("Need more times before we can plot!"),
+        |scatter_plot_html| scatter_plot_html,
+    );
+
+    let box_plot_html = generate_box_plot_html(vec![&mut data.times_excluding_saturday])
+        .map_or_else(
+            |_| String::from("Need more times before we can plot!"),
+            |box_plot_html| box_plot_html,
+        );
 
     Response::from_html(
         UserTemplate {
@@ -188,7 +193,18 @@ async fn handle_h2h<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<Resp
     };
 
     let box_plot_html =
-        generate_box_plot_html(vec![&mut user1_data.all_times, &mut user2_data.all_times]);
+        generate_box_plot_html(vec![&mut user1_data.all_times, &mut user2_data.all_times])
+            .map_or_else(
+                |_| String::from("Need more times before we can generate box plot!"),
+                |box_plot_html| box_plot_html,
+            );
+
+    let scatter_plot_html =
+        generate_scatter_plot_html(vec![&mut user1_data.all_times, &mut user2_data.all_times])
+            .map_or_else(
+                |_| String::from("Need more times before we can generate scatter plot!"),
+                |scatter_plot_html| scatter_plot_html,
+            );
 
     let data: Option<HeadToHeadData> = fetch_h2h_data(user1.clone(), user2.clone(), client)
         .await
@@ -199,6 +215,7 @@ async fn handle_h2h<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<Resp
             users,
             data,
             box_plot_html,
+            scatter_plot_html,
         }
         .render()
         .unwrap(),

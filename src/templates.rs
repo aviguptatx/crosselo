@@ -67,6 +67,7 @@ pub struct HeadToHeadTemplate {
     pub users: Vec<String>,
     pub data: Option<HeadToHeadData>,
     pub box_plot_html: String,
+    pub scatter_plot_html: String,
 }
 
 pub const CSS_STYLES: &str = "

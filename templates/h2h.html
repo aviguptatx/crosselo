@@ -30,12 +30,12 @@
     <h1 class="mb-4 text-center">Head to Head Comparison</h1>
     <div class="row mt-4">
         <div class="col-md-6">
-            <label for="user1Select">Select Player 1:</label>
-            <select class="form-control" id="user1Select">
+            <label style="color: #1f77b4;" for="user1Select">Select Player 1:</label>
+            <select style="color: #1f77b4;" class="form-control" id="user1Select">
                 {% for user in users %}
                     {% match data %}
                         {% when Some with (some_data) %}
-                            <option {% if user == some_data.user1.as_str() %} selected {% endif %}>{{ user }}</option>
+                            <option {% if user == some_data.user1.as_str() %} style="font-weight: bold;" selected {% endif %}>{{ user }}</option>
                         {% when None %}
                             <option>{{ user }}</option>
                     {% endmatch %}
@@ -43,12 +43,12 @@
             </select>
         </div>
         <div class="col-md-6">
-            <label for="user2Select">Select Player 2:</label>
-            <select class="form-control" id="user2Select">
+            <label style="color: #ff7f0e;" for="user2Select">Select Player 2:</label>
+            <select style="color: #ff7f0e;" class="form-control" id="user2Select">
                 {% for user in users %}
                     {% match data %}
                         {% when Some with (some_data) %}
-                            <option {% if user == some_data.user2.as_str() %} selected {% endif %}>{{ user }}</option>
+                            <option {% if user == some_data.user2.as_str() %} style="font-weight: bold;" selected {% endif %}>{{ user }}</option>
                         {% when None %}
                             <option>{{ user }}</option>
                     {% endmatch %}
@@ -67,7 +67,6 @@
     {% when Some with (data) %}
         <div class="container mt-5">
             <h2 class="text-center">Head to Head Stats</h2>
-            <div class="row">
                 <div class="col-md-12">
                     <div class="text-center">
                         {% if data.user1 == data.user2 %}
@@ -79,8 +78,10 @@
                         {% endif %}
                     </div>
                 </div>
-            </div>
+            <h2 class="text-center">Plots (Excluding Saturday Data)</h2>
+            <div>
                 {{ box_plot_html|safe }}
+                {{ scatter_plot_html|safe }}
             </div>
         </div>
     {% when None %}
