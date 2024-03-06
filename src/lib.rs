@@ -69,23 +69,17 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
 async fn handle_index<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<Response> {
     let db_name = ctx.param("db_name").map_or("all", |str| str);
 
-    let leaderboard_entries = fetch_leaderboard_from_db(db_name, client)
+    let data = fetch_leaderboard_from_db(db_name, client)
         .await
-        .map_err(|e| format!("Couldn't fetch leaderboard from database: {}", e))?;
+        .map_err(|e| format!("Couldn't fetch leaderboard from database: {e}"))?;
 
-    Response::from_html(
-        LeaderboardTemplate {
-            data: leaderboard_entries,
-        }
-        .render()
-        .unwrap(),
-    )
+    Response::from_html(LeaderboardTemplate { data }.render().unwrap())
 }
 
 async fn handle_podium(client: &Postgrest) -> Result<Response> {
     let podium_data = fetch_podium_data(client)
         .await
-        .map_err(|e| format!("Couldn't fetch results from database: {}", e))?;
+        .map_err(|e| format!("Couldn't fetch results from database: {e}"))?;
 
     Response::from_html(PodiumTemplate { data: podium_data }.render().unwrap())
 }
@@ -96,37 +90,21 @@ async fn handle_user<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<Res
         None => return Err("Couldn't process username parameter".into()),
     };
 
-    let mut user_data = fetch_user_data(&username, client)
+    let mut data = fetch_user_data(&username, client)
         .await
-        .map_err(|e| format!("Couldn't fetch user data from database: {}", e))?;
+        .map_err(|e| format!("Couldn't fetch user data from database: {e}"))?;
 
-    let scatter_plot_html = generate_scatter_plot_html(vec![&mut user_data.all_times])
+    let scatter_plot_html = generate_scatter_plot_html(vec![&mut data.all_times])
         .unwrap_or_else(|_| String::from("Need more times before we can plot!"));
 
-    let box_plot_html = generate_box_plot_html(vec![&mut user_data.times_excluding_saturday])
+    let box_plot_html = generate_box_plot_html(vec![&mut data.times_excluding_saturday])
         .unwrap_or_else(|_| String::from("Need more times before we can plot!"));
 
     Response::from_html(
         UserTemplate {
-            username: username.to_string(),
+            username,
             scatter_plot_html,
             box_plot_html,
-            data: user_data,
-        }
-        .render()
-        .unwrap(),
-    )
-}
-
-async fn handle_history<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<Response> {
-    let date = ctx.param("date").ok_or("Couldn't process date parameter")?;
-    let data = fetch_results(date, client)
-        .await
-        .map_err(|e| format!("Couldn't fetch results from database: {}", e))?;
-
-    Response::from_html(
-        HistoryTemplate {
-            date: date.to_string(),
             data,
         }
         .render()
@@ -134,10 +112,22 @@ async fn handle_history<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<
     )
 }
 
+async fn handle_history<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<Response> {
+    let date = ctx
+        .param("date")
+        .ok_or("Couldn't process date parameter")?
+        .to_string();
+    let data = fetch_results(&date, client)
+        .await
+        .map_err(|e| format!("Couldn't fetch results from database: {e}"))?;
+
+    Response::from_html(HistoryTemplate { date, data }.render().unwrap())
+}
+
 async fn handle_today<T>(ctx: &RouteContext<T>) -> Result<Response> {
     let data = fetch_live_leaderboard(ctx.secret("NYT_S_TOKEN")?.to_string())
         .await
-        .map_err(|e| format!("Couldn't fetch live leaderboard from NYT API: {}", e))?;
+        .map_err(|e| format!("Couldn't fetch live leaderboard from NYT API: {e}"))?;
 
     Response::from_html(TodayTemplate { data }.render().unwrap())
 }
@@ -145,12 +135,7 @@ async fn handle_today<T>(ctx: &RouteContext<T>) -> Result<Response> {
 async fn handle_recent(client: &Postgrest) -> Result<Response> {
     let most_recent_date = fetch_most_recent_crossword_date(client)
         .await
-        .map_err(|e| {
-            format!(
-                "Couldn't fetch most recent crossword date from database: {}",
-                e
-            )
-        })?;
+        .map_err(|e| format!("Couldn't fetch most recent crossword date from database: {e}"))?;
 
     let dates: Vec<String> = (0..10)
         .map(|i| {
@@ -164,16 +149,16 @@ async fn handle_recent(client: &Postgrest) -> Result<Response> {
 }
 
 async fn handle_h2h<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<Response> {
-    let usernames = fetch_usernames_sorted_by_elo(client)
+    let users = fetch_usernames_sorted_by_elo(client)
         .await
-        .map_err(|e| format!("Couldn't fetch usernames from database: {}", e))?;
+        .map_err(|e| format!("Couldn't fetch usernames from database: {e}"))?;
 
     let (user1, user2) = match (ctx.param("user1"), ctx.param("user2")) {
         (Some(u1), Some(u2)) => (u1.replace("%20", " "), u2.replace("%20", " ")),
         _ => {
             return Response::from_html(
                 HeadToHeadTemplate {
-                    users: usernames,
+                    users,
                     ..Default::default()
                 }
                 .render()
@@ -184,11 +169,11 @@ async fn handle_h2h<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<Resp
 
     let mut user1_data = fetch_user_data(&user1, client)
         .await
-        .map_err(|e| format!("Couldn't fetch user1 data from database: {}", e))?;
+        .map_err(|e| format!("Couldn't fetch user1 data from database: {e}"))?;
 
     let mut user2_data = fetch_user_data(&user2, client)
         .await
-        .map_err(|e| format!("Couldn't fetch user2 data from database: {}", e))?;
+        .map_err(|e| format!("Couldn't fetch user2 data from database: {e}"))?;
 
     let box_plot_html =
         generate_box_plot_html(vec![&mut user1_data.all_times, &mut user2_data.all_times])
@@ -200,12 +185,12 @@ async fn handle_h2h<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<Resp
                 String::from("Need more times before we can generate scatter plot!")
             });
 
-    let h2h_data = fetch_h2h_data(user1, user2, client).await.ok();
+    let data = fetch_h2h_data(user1, user2, client).await.ok();
 
     Response::from_html(
         HeadToHeadTemplate {
-            users: usernames,
-            data: h2h_data,
+            users,
+            data,
             box_plot_html,
             scatter_plot_html,
         }
