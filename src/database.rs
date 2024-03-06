@@ -9,6 +9,16 @@ use crate::models::{
 };
 use crate::util::compute_percentiles;
 
+/// Fetches the results for a given date from the database.
+///
+/// # Arguments
+///
+/// * `date` - A string representing the date in "YYYY-MM-DD" format.
+/// * `client` - A reference to the Postgrest client.
+///
+/// # Returns
+///
+/// A `Result` containing a vector of `ResultEntry` structs, or an error if the database query fails.
 pub async fn fetch_results(
     date: &str,
     client: &Postgrest,
@@ -29,6 +39,15 @@ pub async fn fetch_results(
     Ok(result_data)
 }
 
+/// Fetches the most recent crossword date from the database.
+///
+/// # Arguments
+///
+/// * `client` - A reference to the Postgrest client.
+///
+/// # Returns
+///
+/// A `Result` containing the most recent crossword date as a `NaiveDate`, or an error if the database query fails.
 pub async fn fetch_most_recent_crossword_date(
     client: &Postgrest,
 ) -> Result<NaiveDate, Box<dyn Error>> {
@@ -54,6 +73,15 @@ pub async fn fetch_most_recent_crossword_date(
     )?)
 }
 
+/// Fetches the usernames sorted by ELO rating from the database.
+///
+/// # Arguments
+///
+/// * `client` - A reference to the Postgrest client.
+///
+/// # Returns
+///
+/// A `Result` containing a vector of usernames as strings, or an error if the database query fails.
 pub async fn fetch_usernames_sorted_by_elo(
     client: &Postgrest,
 ) -> Result<Vec<String>, Box<dyn Error>> {
@@ -74,6 +102,15 @@ pub async fn fetch_usernames_sorted_by_elo(
         .collect())
 }
 
+/// Fetches the top 10 results from the database, sorted by time.
+///
+/// # Arguments
+///
+/// * `client` - A reference to the Postgrest client.
+///
+/// # Returns
+///
+/// A `Result` containing a vector of `ResultEntry` structs, or an error if the database query fails.
 pub async fn fetch_podium_data(client: &Postgrest) -> Result<Vec<ResultEntry>, Box<dyn Error>> {
     let body = client
         .from("results_rust")
@@ -92,6 +129,16 @@ pub async fn fetch_podium_data(client: &Postgrest) -> Result<Vec<ResultEntry>, B
     Ok(podium_data)
 }
 
+/// Fetches the user data for a given username from the database.
+///
+/// # Arguments
+///
+/// * `username` - A reference to the username as a string.
+/// * `client` - A reference to the Postgrest client.
+///
+/// # Returns
+///
+/// A `Result` containing a `UserData` struct, or an error if the database query fails.
 pub async fn fetch_user_data(
     username: &str,
     client: &Postgrest,
@@ -131,6 +178,16 @@ pub async fn fetch_user_data(
     })
 }
 
+/// Fetches the leaderboard data from the database.
+///
+/// # Arguments
+///
+/// * `db_name` - A string representing the name of the database table to query.
+/// * `client` - A reference to the Postgrest client.
+///
+/// # Returns
+///
+/// A `Result` containing a vector of `LeaderboardEntry` structs, or an error if the database query fails.
 pub async fn fetch_leaderboard_from_db(
     db_name: &str,
     client: &Postgrest,
@@ -151,6 +208,17 @@ pub async fn fetch_leaderboard_from_db(
     Ok(leaderboard_data)
 }
 
+/// Fetches the head-to-head data for two users from the database.
+///
+/// # Arguments
+///
+/// * `user1` - A string representing the username of the first user.
+/// * `user2` - A string representing the username of the second user.
+/// * `client` - A reference to the Postgrest client.
+///
+/// # Returns
+///
+/// A `Result` containing a `HeadToHeadData` struct, or an error if the database query fails.
 pub async fn fetch_h2h_data(
     user1: String,
     user2: String,
