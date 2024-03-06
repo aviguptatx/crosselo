@@ -16,9 +16,8 @@ struct PlottingError {
 }
 
 impl PlottingError {
-    /// Creates a new `PlottingError` with the given message.
     fn new(message: &str) -> Self {
-        PlottingError {
+        Self {
             message: message.to_string(),
         }
     }
@@ -88,15 +87,15 @@ fn compute_average_time(entries: &[ResultEntry]) -> i32 {
 ///
 /// A `Result` containing the HTML string for the scatter plot, or a `PlottingError` if an error occurs.
 pub fn generate_scatter_plot_html(
-    user_entries: Vec<&mut [ResultEntry]>,
+    all_user_entries: Vec<&mut [ResultEntry]>,
 ) -> Result<String, Box<dyn Error>> {
     let mut plot = Plot::new();
     let mut min_moving_average = i32::MAX;
     let mut max_moving_average = i32::MIN;
 
-    let min_user_entries_length = user_entries
+    let min_user_entries_length = all_user_entries
         .iter()
-        .map(|entries| entries.len())
+        .map(|user_entries| user_entries.len())
         .min()
         .ok_or_else(|| PlottingError::new("Couldn't calculate min user entries length"))?;
 
@@ -110,7 +109,7 @@ pub fn generate_scatter_plot_html(
         _ => false,
     };
 
-    for user_entries in user_entries {
+    for user_entries in all_user_entries {
         user_entries.sort_by(|a, b| a.date.cmp(&b.date));
 
         let (dates, times) = compute_moving_averages(user_entries, 30, include_partial);
@@ -194,17 +193,17 @@ pub fn generate_scatter_plot_html(
 ///
 /// A `Result` containing the HTML string for the box plot, or a `PlottingError` if an error occurs.
 pub fn generate_box_plot_html(
-    user_entries: Vec<&mut Vec<ResultEntry>>,
+    all_user_entries: Vec<&mut Vec<ResultEntry>>,
 ) -> Result<String, Box<dyn Error>> {
-    let max_average_time = user_entries
+    let max_average_time = all_user_entries
         .iter()
-        .map(|entries| compute_average_time(entries))
+        .map(|user_entries| compute_average_time(user_entries))
         .max()
         .ok_or_else(|| PlottingError::new("Couldn't calculate max average time"))?;
 
     let mut plot = Plot::new();
 
-    for user_entries in user_entries {
+    for user_entries in all_user_entries {
         let username = user_entries
             .first()
             .ok_or_else(|| {
