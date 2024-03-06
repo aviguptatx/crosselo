@@ -23,17 +23,20 @@ impl fmt::Display for PlottingError {
 
 impl std::error::Error for PlottingError {}
 
-fn get_moving_averages(entries: &[ResultEntry], interval: usize) -> (Vec<String>, Vec<i32>) {
+fn get_moving_averages(
+    entries: &[ResultEntry],
+    interval: usize,
+    include_partial: bool,
+) -> (Vec<String>, Vec<i32>) {
     let mut dates = Vec::new();
     let mut moving_averages = Vec::new();
 
     for i in 0..entries.len() {
-        if i >= interval - 1 {
-            let sum: i32 = entries[(i - (interval - 1))..=i]
-                .iter()
-                .map(|entry| entry.time)
-                .sum();
-            let average = sum / interval as i32;
+        if include_partial || i >= interval - 1 {
+            let start = i.saturating_sub(interval - 1);
+            let end = i;
+            let sum: i32 = entries[start..=end].iter().map(|entry| entry.time).sum();
+            let average = sum / (end - start + 1) as i32;
             dates.push(entries[i].date.clone());
             moving_averages.push(average);
         }
@@ -60,16 +63,16 @@ pub fn generate_scatter_plot_html(
         .min()
         .ok_or("Couldn't calculate min user_entries length")?;
 
-    let interval: usize = match min_user_entries_length {
+    let include_partial = match min_user_entries_length {
         0 => return Err(Box::new(PlottingError)),
-        1..=29 => 2,
-        _ => 30,
+        1..=60 => true,
+        _ => false,
     };
 
     for user_entries in all_entries {
         user_entries.sort_by(|a, b| a.date.cmp(&b.date));
 
-        let (dates, times) = get_moving_averages(user_entries, interval);
+        let (dates, times) = get_moving_averages(user_entries, 30, include_partial);
 
         min_moving_average = min(
             min_moving_average,
@@ -95,9 +98,7 @@ pub fn generate_scatter_plot_html(
 
     plot.set_layout(
         Layout::new()
-            .title(Title::new(
-                format!("{interval}-crossword Moving Average").as_str(),
-            ))
+            .title(Title::new("30-crossword Moving Average"))
             .x_axis(
                 Axis::new()
                     .range_slider(RangeSlider::new().visible(true))
