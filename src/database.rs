@@ -7,7 +7,6 @@ use std::error::Error;
 use crate::models::{
     HeadToHeadData, LeaderboardEntry, ResultEntry, UserData, UsernameData, Wrapper,
 };
-use crate::util::compute_percentiles;
 
 /// Fetches the results for a given date from the database.
 ///
@@ -143,7 +142,6 @@ pub async fn fetch_user_data(
     username: &str,
     client: &Postgrest,
 ) -> Result<UserData, Box<dyn Error>> {
-    let percentiles = vec![10, 25, 50, 75, 90];
     let body = client
         .from("results_rust")
         .select("*")
@@ -167,11 +165,9 @@ pub async fn fetch_user_data(
         .cloned()
         .collect();
 
-    let percentiles = compute_percentiles(&times_excluding_saturday, &percentiles)?;
     let top_times = all_times.iter().take(3).cloned().collect();
 
     Ok(UserData {
-        percentiles,
         all_times,
         times_excluding_saturday,
         top_times,

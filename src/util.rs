@@ -97,12 +97,14 @@ pub fn generate_scatter_plot_html(
         .iter()
         .map(|user_entries| user_entries.len())
         .min()
-        .ok_or_else(|| PlottingError::new("Couldn't calculate min user entries length"))?;
+        .ok_or_else(|| {
+            PlottingError::new("User doesn't have enough entries to generate scatter plot")
+        })?;
 
     let include_partial = match min_user_entries_length {
         0 => {
             return Err(Box::new(PlottingError::new(
-                "No user entries to generate plot",
+                "User doesn't have enough entries to generate scatter plot",
             )))
         }
         1..=60 => true,
@@ -197,9 +199,12 @@ pub fn generate_box_plot_html(
 ) -> Result<String, Box<dyn Error>> {
     let max_average_time = all_user_entries
         .iter()
+        .filter(|user_entries| !user_entries.is_empty())
         .map(|user_entries| compute_average_time(user_entries))
         .max()
-        .ok_or_else(|| PlottingError::new("Couldn't calculate max average time"))?;
+        .ok_or_else(|| {
+            PlottingError::new("User doesn't have enough entries to generate box plot")
+        })?;
 
     let mut plot = Plot::new();
 
@@ -248,33 +253,6 @@ pub fn generate_box_plot_html(
     Ok(plot.to_inline_html(Some("box-plot")))
 }
 
-/// Computes the specified percentile values for the given `ResultEntry` data.
-///
-/// # Arguments
-///
-/// * `data` - A slice of `ResultEntry` values.
-/// * `percentiles_to_compute` - A vector of integers representing the percentiles to compute.
-///
-/// # Returns
-///
-/// A `Result` containing a vector of computed percentile values, or a `PlottingError` if an error occurs.
-pub fn compute_percentiles(
-    data: &[ResultEntry],
-    percentiles_to_compute: &Vec<i32>,
-) -> Result<Vec<i32>, Box<dyn Error>> {
-    let mut result: Vec<i32> = Vec::new();
-    for &percentile in percentiles_to_compute {
-        let index = (percentile as f64 / 100.0 * data.len() as f64) as usize;
-        let percentile_value = data
-            .get(index)
-            .ok_or_else(|| PlottingError::new("Index out of bounds"))?
-            .time;
-        result.push(percentile_value);
-    }
-    result.reverse();
-    Ok(result)
-}
-
 /// Fetches the live leaderboard data from the New York Times API.
 ///
 /// # Arguments
@@ -299,4 +277,152 @@ pub async fn fetch_live_leaderboard(token: String) -> Result<Vec<NytResultEntry>
     let api_response: NytApiResponse = serde_json::from_str(&body)?;
 
     Ok(api_response.data)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_compute_moving_averages_with_partial_averages() {
+        let entries = vec![
+            ResultEntry {
+                date: "2023-10-25".to_string(),
+                time: 100,
+                ..Default::default()
+            },
+            ResultEntry {
+                date: "2023-10-26".to_string(),
+                time: 120,
+                ..Default::default()
+            },
+            ResultEntry {
+                date: "2023-10-27".to_string(),
+                time: 110,
+                ..Default::default()
+            },
+        ];
+
+        let (dates, averages) = compute_moving_averages(&entries, 2, true);
+
+        assert_eq!(dates, vec!["2023-10-25", "2023-10-26", "2023-10-27"]);
+        assert_eq!(averages, vec![100, 110, 115]);
+    }
+
+    #[test]
+    fn test_compute_moving_averages_without_partial_averages() {
+        let entries = vec![
+            ResultEntry {
+                date: "2023-10-25".to_string(),
+                time: 100,
+                ..Default::default()
+            },
+            ResultEntry {
+                date: "2023-10-26".to_string(),
+                time: 120,
+                ..Default::default()
+            },
+            ResultEntry {
+                date: "2023-10-27".to_string(),
+                time: 110,
+                ..Default::default()
+            },
+        ];
+
+        let (dates, averages) = compute_moving_averages(&entries, 2, false);
+
+        assert_eq!(dates, vec!["2023-10-26", "2023-10-27"]);
+        assert_eq!(averages, vec![110, 115]);
+    }
+
+    #[test]
+    fn test_compute_moving_averages_with_empty_input() {
+        let entries: Vec<ResultEntry> = Vec::new();
+
+        let (dates, averages) = compute_moving_averages(&entries, 2, true);
+
+        assert!(dates.is_empty());
+        assert!(averages.is_empty());
+    }
+
+    #[test]
+    fn test_compute_average_time() {
+        let entries = vec![
+            ResultEntry {
+                date: "2023-10-25".to_string(),
+                time: 100,
+                ..Default::default()
+            },
+            ResultEntry {
+                date: "2023-10-26".to_string(),
+                time: 120,
+                ..Default::default()
+            },
+            ResultEntry {
+                date: "2023-10-27".to_string(),
+                time: 110,
+                ..Default::default()
+            },
+        ];
+
+        let average_time = compute_average_time(&entries);
+
+        assert_eq!(average_time, 110);
+    }
+
+    #[test]
+    fn test_generate_scatter_plot_html_with_no_user_entries() {
+        let all_user_entries: Vec<&mut [ResultEntry]> = vec![];
+
+        let result = generate_scatter_plot_html(all_user_entries);
+
+        assert!(result.is_err());
+        assert_eq!(
+            result.err().unwrap().to_string(),
+            "Plotting error: User doesn't have enough entries to generate scatter plot"
+        );
+    }
+
+    #[test]
+    fn test_generate_scatter_plot_html_with_empty_user_entries() {
+        let mut entries1: Vec<ResultEntry> = vec![];
+        let mut entries2: Vec<ResultEntry> = vec![];
+        let all_user_entries: Vec<&mut [ResultEntry]> = vec![&mut entries1, &mut entries2];
+
+        let result = generate_scatter_plot_html(all_user_entries);
+
+        assert!(result.is_err());
+        assert_eq!(
+            result.err().unwrap().to_string(),
+            "Plotting error: User doesn't have enough entries to generate scatter plot"
+        );
+    }
+
+    #[test]
+    fn test_generate_box_plot_html_with_no_user_entries() {
+        let all_user_entries: Vec<&mut Vec<ResultEntry>> = vec![];
+
+        let result = generate_box_plot_html(all_user_entries);
+
+        assert!(result.is_err());
+        assert_eq!(
+            result.err().unwrap().to_string(),
+            "Plotting error: User doesn't have enough entries to generate box plot"
+        );
+    }
+
+    #[test]
+    fn test_generate_box_plot_html_with_empty_user_entries() {
+        let mut entries1: Vec<ResultEntry> = vec![];
+        let mut entries2: Vec<ResultEntry> = vec![];
+        let all_user_entries: Vec<&mut Vec<ResultEntry>> = vec![&mut entries1, &mut entries2];
+
+        let result = generate_box_plot_html(all_user_entries);
+
+        assert!(result.is_err());
+        assert_eq!(
+            result.err().unwrap().to_string(),
+            "Plotting error: User doesn't have enough entries to generate box plot"
+        );
+    }
 }
