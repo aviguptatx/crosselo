@@ -67,9 +67,9 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
 }
 
 async fn handle_index<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<Response> {
-    let db_name = ctx.param("db_name").map_or("all", |str| str);
+    let db_name = ctx.param("db_name").map_or("all", |str| str).to_string() + "_rust";
 
-    let data = fetch_leaderboard_from_db(db_name, client)
+    let data = fetch_leaderboard_from_db(&db_name, client)
         .await
         .map_err(|e| format!("Couldn't fetch leaderboard from database: {e}"))?;
 

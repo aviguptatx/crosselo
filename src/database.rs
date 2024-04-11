@@ -85,7 +85,7 @@ pub async fn fetch_usernames_sorted_by_elo(
     client: &Postgrest,
 ) -> Result<Vec<String>, Box<dyn Error>> {
     let body = client
-        .from("all")
+        .from("all_rust")
         .select("username")
         .order("elo.desc")
         .execute()
