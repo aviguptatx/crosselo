@@ -31,7 +31,7 @@
     <h1>Statistics for {{ username }}</h1>
     <h2>Best Times</h2>
     <div class="podium">
-        {% for entry in data.top_times %}
+        {% for entry in top_times %}
             {% if loop.index == 1 %}
                 <div class="podium-item gold">
             {% else if loop.index == 2 %}

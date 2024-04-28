@@ -1,6 +1,6 @@
 use askama::Template;
 
-use crate::models::{HeadToHeadData, LeaderboardEntry, NytResultEntry, ResultEntry, UserData};
+use crate::models::{HeadToHeadData, LeaderboardEntry, NytResultEntry, ResultEntry};
 
 mod filters {
     pub fn convert_time_to_mm_ss(seconds: &i32) -> ::askama::Result<String> {
@@ -33,7 +33,7 @@ pub struct UserTemplate {
     pub username: String,
     pub scatter_plot_html: String,
     pub box_plot_html: String,
-    pub data: UserData,
+    pub top_times: Vec<ResultEntry>,
 }
 
 #[derive(Template)]

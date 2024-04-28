@@ -59,7 +59,6 @@ pub struct HeadToHeadData {
 pub struct UserData {
     pub all_times: Vec<ResultEntry>,
     pub times_excluding_saturday: Vec<ResultEntry>,
-    pub top_times: Vec<ResultEntry>,
 }
 
 #[derive(Debug, Deserialize)]

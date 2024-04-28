@@ -94,7 +94,7 @@ async fn handle_user<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<Res
         .await
         .map_err(|e| format!("Couldn't fetch user data from database: {e}"))?;
 
-    let scatter_plot_html = generate_scatter_plot_html(vec![&mut data.all_times])
+    let scatter_plot_html = generate_scatter_plot_html(vec![&mut data.times_excluding_saturday])
         .unwrap_or_else(|_| String::from("Need more times before we can plot!"));
 
     let box_plot_html = generate_box_plot_html(vec![&mut data.times_excluding_saturday])
@@ -105,7 +105,7 @@ async fn handle_user<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<Res
             username,
             scatter_plot_html,
             box_plot_html,
-            data,
+            top_times: data.all_times.iter().take(3).cloned().collect(),
         }
         .render()
         .unwrap(),

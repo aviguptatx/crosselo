@@ -165,12 +165,9 @@ pub async fn fetch_user_data(
         .cloned()
         .collect();
 
-    let top_times = all_times.iter().take(3).cloned().collect();
-
     Ok(UserData {
         all_times,
         times_excluding_saturday,
-        top_times,
     })
 }
 
