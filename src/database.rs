@@ -32,10 +32,7 @@ pub async fn fetch_results(
         .text()
         .await?;
 
-    let result_data: Vec<ResultEntry> =
-        serde_json::from_str(&body).map_err(|e| format!("JSON parsing error: {e}"))?;
-
-    Ok(result_data)
+    Ok(serde_json::from_str::<Vec<ResultEntry>>(&body)?)
 }
 
 /// Fetches the most recent crossword date from the database.
@@ -93,9 +90,7 @@ pub async fn fetch_usernames_sorted_by_elo(
         .text()
         .await?;
 
-    let username_data: Vec<UsernameData> = serde_json::from_str(&body)?;
-
-    Ok(username_data
+    Ok(serde_json::from_str::<Vec<UsernameData>>(&body)?
         .into_iter()
         .map(|user| user.username)
         .collect())
@@ -120,12 +115,7 @@ pub async fn fetch_podium_data(client: &Postgrest) -> Result<Vec<ResultEntry>, B
         .text()
         .await?;
 
-    let mut podium_data: Vec<ResultEntry> =
-        serde_json::from_str(&body).map_err(|e| format!("JSON parsing error: {e}"))?;
-
-    podium_data.truncate(10);
-
-    Ok(podium_data)
+    Ok(serde_json::from_str::<Vec<ResultEntry>>(&body)?[..10].to_vec())
 }
 
 /// Fetches the user data for a given username from the database.
@@ -152,8 +142,7 @@ pub async fn fetch_user_data(
         .text()
         .await?;
 
-    let all_times: Vec<ResultEntry> =
-        serde_json::from_str(&body).map_err(|e| format!("JSON parsing error: {e}"))?;
+    let all_times: Vec<ResultEntry> = serde_json::from_str(&body)?;
 
     let times_excluding_saturday: Vec<ResultEntry> = all_times
         .iter()
@@ -193,9 +182,7 @@ pub async fn fetch_leaderboard_from_db(
         .text()
         .await?;
 
-    let mut leaderboard_data: Vec<LeaderboardEntry> =
-        serde_json::from_str(&body).map_err(|e| format!("JSON parsing error: {e}"))?;
-
+    let mut leaderboard_data: Vec<LeaderboardEntry> = serde_json::from_str(&body)?;
     leaderboard_data.sort_by(|a, b| b.elo.partial_cmp(&a.elo).unwrap_or(Ordering::Equal));
 
     Ok(leaderboard_data)

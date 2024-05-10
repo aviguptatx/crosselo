@@ -105,7 +105,7 @@ async fn handle_user<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<Res
             username,
             scatter_plot_html,
             box_plot_html,
-            top_times: data.all_times.iter().take(3).cloned().collect(),
+            top_times: data.all_times[..3].to_vec(),
         }
         .render()
         .unwrap(),

@@ -5,31 +5,20 @@ use plotly::layout::{Axis, RangeSelector, RangeSlider, SelectorButton, SelectorS
 use plotly::{BoxPlot, Layout, Plot, Scatter};
 use std::cmp::{max, min};
 use std::error::Error;
-use std::fmt;
 
 use crate::models::{NytApiResponse, NytResultEntry, ResultEntry};
 
-/// Custom error for plotting operations.
-#[derive(Debug, Clone)]
-struct PlottingError {
-    message: String,
-}
+use thiserror::Error;
 
-impl PlottingError {
-    fn new(message: &str) -> Self {
-        Self {
-            message: message.to_string(),
-        }
-    }
+#[derive(Debug, Error)]
+pub enum PlottingError {
+    #[error("Plotting error: User doesn't have enough entries to generate plot")]
+    NotEnoughEntries,
+    #[error("Plotting error: Couldn't find minimum moving average")]
+    MinMovingAverageNotFound,
+    #[error("Plotting error: Couldn't find maximum moving average")]
+    MaxMovingAverageNotFound,
 }
-
-impl fmt::Display for PlottingError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Plotting error: {}", self.message)
-    }
-}
-
-impl std::error::Error for PlottingError {}
 
 /// Computes the moving average for a given slice of `ResultEntry` values.
 ///
@@ -47,21 +36,21 @@ fn compute_moving_averages(
     interval: usize,
     include_partial: bool,
 ) -> (Vec<String>, Vec<i32>) {
-    let mut dates = Vec::new();
-    let mut moving_averages = Vec::new();
-
-    for i in 0..entries.len() {
-        if include_partial || i >= interval - 1 {
+    entries
+        .iter()
+        .enumerate()
+        .filter(|(i, _)| include_partial || *i >= interval - 1)
+        .map(|(i, entry)| {
             let start = i.saturating_sub(interval - 1);
-            let end = i;
-            let sum: i32 = entries[start..=end].iter().map(|entry| entry.time).sum();
-            let average = sum / (end - start + 1) as i32;
-            dates.push(entries[i].date.clone());
-            moving_averages.push(average);
-        }
-    }
-
-    (dates, moving_averages)
+            let end = i + 1;
+            let average = entries[start..end]
+                .iter()
+                .map(|entry| entry.time)
+                .sum::<i32>()
+                / (end - start) as i32;
+            (entry.date.clone(), average)
+        })
+        .unzip()
 }
 
 /// Computes the average time for a given slice of `ResultEntry` values.
@@ -97,16 +86,9 @@ pub fn generate_scatter_plot_html(
         .iter()
         .map(|user_entries| user_entries.len())
         .min()
-        .ok_or_else(|| {
-            PlottingError::new("User doesn't have enough entries to generate scatter plot")
-        })?;
-
+        .ok_or(PlottingError::NotEnoughEntries)?;
     let include_partial = match min_user_entries_length {
-        0 => {
-            return Err(Box::new(PlottingError::new(
-                "User doesn't have enough entries to generate scatter plot",
-            )))
-        }
+        0 => return Err(Box::new(PlottingError::NotEnoughEntries)),
         1..=60 => true,
         _ => false,
     };
@@ -121,7 +103,7 @@ pub fn generate_scatter_plot_html(
             *times
                 .iter()
                 .min()
-                .ok_or_else(|| PlottingError::new("Couldn't find min moving average"))?,
+                .ok_or(PlottingError::MinMovingAverageNotFound)?,
         );
 
         max_moving_average = max(
@@ -129,7 +111,7 @@ pub fn generate_scatter_plot_html(
             *times
                 .iter()
                 .max()
-                .ok_or_else(|| PlottingError::new("Couldn't find max moving average"))?,
+                .ok_or(PlottingError::MaxMovingAverageNotFound)?,
         );
 
         let trace_times = Scatter::new(dates.clone(), times)
@@ -195,25 +177,21 @@ pub fn generate_scatter_plot_html(
 ///
 /// A `Result` containing the HTML string for the box plot, or a `PlottingError` if an error occurs.
 pub fn generate_box_plot_html(
-    all_user_entries: Vec<&mut Vec<ResultEntry>>,
+    all_user_entries: Vec<&mut [ResultEntry]>,
 ) -> Result<String, Box<dyn Error>> {
     let max_average_time = all_user_entries
         .iter()
         .filter(|user_entries| !user_entries.is_empty())
         .map(|user_entries| compute_average_time(user_entries))
         .max()
-        .ok_or_else(|| {
-            PlottingError::new("User doesn't have enough entries to generate box plot")
-        })?;
+        .ok_or(PlottingError::NotEnoughEntries)?;
 
     let mut plot = Plot::new();
 
     for user_entries in all_user_entries {
         let username = user_entries
             .first()
-            .ok_or_else(|| {
-                PlottingError::new("User doesn't have enough entries to generate box plot")
-            })?
+            .ok_or(PlottingError::NotEnoughEntries)?
             .username
             .clone();
 
@@ -379,50 +357,46 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap().to_string(),
-            "Plotting error: User doesn't have enough entries to generate scatter plot"
+            "Plotting error: User doesn't have enough entries to generate plot"
         );
     }
 
     #[test]
     fn test_generate_scatter_plot_html_with_empty_user_entries() {
-        let mut entries1: Vec<ResultEntry> = vec![];
-        let mut entries2: Vec<ResultEntry> = vec![];
-        let all_user_entries: Vec<&mut [ResultEntry]> = vec![&mut entries1, &mut entries2];
+        let all_user_entries: Vec<&mut [ResultEntry]> = vec![&mut [], &mut []];
 
         let result = generate_scatter_plot_html(all_user_entries);
 
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap().to_string(),
-            "Plotting error: User doesn't have enough entries to generate scatter plot"
+            "Plotting error: User doesn't have enough entries to generate plot"
         );
     }
 
     #[test]
     fn test_generate_box_plot_html_with_no_user_entries() {
-        let all_user_entries: Vec<&mut Vec<ResultEntry>> = vec![];
+        let all_user_entries: Vec<&mut [ResultEntry]> = vec![];
 
         let result = generate_box_plot_html(all_user_entries);
 
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap().to_string(),
-            "Plotting error: User doesn't have enough entries to generate box plot"
+            "Plotting error: User doesn't have enough entries to generate plot"
         );
     }
 
     #[test]
     fn test_generate_box_plot_html_with_empty_user_entries() {
-        let mut entries1: Vec<ResultEntry> = vec![];
-        let mut entries2: Vec<ResultEntry> = vec![];
-        let all_user_entries: Vec<&mut Vec<ResultEntry>> = vec![&mut entries1, &mut entries2];
+        let all_user_entries: Vec<&mut [ResultEntry]> = vec![&mut [], &mut []];
 
         let result = generate_box_plot_html(all_user_entries);
 
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap().to_string(),
-            "Plotting error: User doesn't have enough entries to generate box plot"
+            "Plotting error: User doesn't have enough entries to generate plot"
         );
     }
 }
