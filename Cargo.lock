@@ -245,6 +245,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "skillratings",
  "thiserror",
  "worker",
 ]
@@ -1363,6 +1364,12 @@ name = "siphasher"
 version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "38b58827f4464d87d377d175e90bf58eb00fd8716ff0a62f80356b5e61555d0d"
+
+[[package]]
+name = "skillratings"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0216316e163efbae956e5f2aa3ff715186119ab8ffc0e4862c46990e23083f6e"
 
 [[package]]
 name = "slab"

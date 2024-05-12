@@ -26,9 +26,11 @@ pub struct ResultEntry {
     pub rank: i32,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct LeaderboardEntry {
     pub username: String,
+    pub mu: f64,
+    pub sigma: f64,
     pub average_time: f64,
     pub num_wins: i32,
     pub num_played: i32,

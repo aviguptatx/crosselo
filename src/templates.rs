@@ -13,6 +13,10 @@ mod filters {
         Ok(f.round() as i32)
     }
 
+    pub fn convert_decimal_to_percentage(decimal: &f64) -> ::askama::Result<String> {
+        Ok(format!("{:.2}%", decimal * 100.0))
+    }
+
     pub fn unpack_time(score: &Option<crate::models::NytScore>) -> ::askama::Result<String> {
         score.as_ref().map_or_else(
             || Ok(String::from("--")),
@@ -68,6 +72,7 @@ pub struct HeadToHeadTemplate {
     pub data: Option<HeadToHeadData>,
     pub box_plot_html: String,
     pub scatter_plot_html: String,
+    pub win_probability: f64,
 }
 
 pub const CSS_STYLES: &str = "
@@ -129,5 +134,11 @@ pub const CSS_STYLES: &str = "
 }
 .podium-item.bronze {
     background-color: #CD7F32;
+}
+a.user1 {
+    color: #1f77b4;
+}
+a.user2 {
+    color: #ff7f0e;
 }
 ";

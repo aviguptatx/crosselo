@@ -188,6 +188,38 @@ pub async fn fetch_leaderboard_from_db(
     Ok(leaderboard_data)
 }
 
+/// Fetches the trueskill mu and sigma for a given user from the database.
+///
+/// # Arguments
+///
+/// * `db_name` - A string representing the name of the database table to query.
+/// * `username` - A reference to the username as a string.
+/// * `client` - A reference to the Postgrest client.
+///
+/// # Returns
+///
+/// A `Result` containing a `LeaderboardEntry` struct, or an error if the database query fails.
+pub async fn fetch_user_trueskill_from_db(
+    username: &str,
+    client: &Postgrest,
+) -> Result<(f64, f64), Box<dyn Error>> {
+    let body = client
+        .from("all_rust")
+        .select("*")
+        .eq("username", username)
+        .execute()
+        .await?
+        .text()
+        .await?;
+
+    let user_data: LeaderboardEntry = serde_json::from_str::<Vec<LeaderboardEntry>>(&body)?
+        .first()
+        .cloned()
+        .ok_or("Couldn't find user in database")?;
+
+    Ok((user_data.mu, user_data.sigma))
+}
+
 /// Fetches the head-to-head data for two users from the database.
 ///
 /// # Arguments
@@ -228,10 +260,12 @@ pub async fn fetch_h2h_data(
     };
 
     let time_diff_description = format!(
-        "On average, {} is {:.1} seconds {} than {}.",
+        "<a class=\"user1\" href=\"/user/{}\">{}</a> is {:.1} seconds {} than <a class=\"user2\" href=\"/user/{}\">{}</a> on average.",
+        user1,
         user1,
         h2h_data.avg_time_difference.abs(),
         speed_verb,
+        user2,
         user2,
     );
 

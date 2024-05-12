@@ -3,6 +3,7 @@ use plotly::color::Rgb;
 use plotly::common::{Line, Marker, Mode, Title};
 use plotly::layout::{Axis, RangeSelector, RangeSlider, SelectorButton, SelectorStep, StepMode};
 use plotly::{BoxPlot, Layout, Plot, Scatter};
+use skillratings::trueskill::{expected_score, TrueSkillConfig, TrueSkillRating};
 use std::cmp::{max, min};
 use std::error::Error;
 
@@ -229,6 +230,25 @@ pub fn generate_box_plot_html(
     );
 
     Ok(plot.to_inline_html(Some("box-plot")))
+}
+
+pub fn compute_win_probability(user1: (f64, f64), user2: (f64, f64)) -> f64 {
+    expected_score(
+        &TrueSkillRating {
+            rating: user1.0,
+            uncertainty: user1.1,
+        },
+        &TrueSkillRating {
+            rating: user2.0,
+            uncertainty: user2.1,
+        },
+        &TrueSkillConfig {
+            draw_probability: 0.05,
+            beta: 4.167,
+            default_dynamics: 0.0833,
+        },
+    )
+    .0
 }
 
 /// Fetches the live leaderboard data from the New York Times API.

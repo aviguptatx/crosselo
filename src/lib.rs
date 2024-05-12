@@ -1,6 +1,8 @@
 use askama::Template;
 use chrono::Duration;
+use database::fetch_user_trueskill_from_db;
 use postgrest::Postgrest;
+use util::compute_win_probability;
 use worker::{event, Context, Env, Request, Response, Result, RouteContext, Router};
 
 mod database;
@@ -185,6 +187,16 @@ async fn handle_h2h<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<Resp
                 String::from("Need more times before we can generate scatter plot!")
             });
 
+    let (user1_mu, user1_sigma) = fetch_user_trueskill_from_db(&user1, client)
+        .await
+        .map_err(|e| format!("Couldn't fetch user1 trueskill from database: {e}"))?;
+
+    let (user2_mu, user2_sigma) = fetch_user_trueskill_from_db(&user2, client)
+        .await
+        .map_err(|e| format!("Couldn't fetch user2 trueskill from database: {e}"))?;
+
+    let win_probability = compute_win_probability((user1_mu, user1_sigma), (user2_mu, user2_sigma));
+
     let data = fetch_h2h_data(user1, user2, client).await.ok();
 
     Response::from_html(
@@ -193,6 +205,7 @@ async fn handle_h2h<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<Resp
             data,
             box_plot_html,
             scatter_plot_html,
+            win_probability,
         }
         .render()
         .unwrap(),
