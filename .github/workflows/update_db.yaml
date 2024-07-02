@@ -27,4 +27,4 @@ jobs:
       - name: Install dependencies
         run: pip install -r scripts/requirements.txt
       - name: Update database
-        run: python scripts/update_db.py
+        run: python -u scripts/update_db.py
