@@ -81,6 +81,8 @@ def fetch_today_leaderboard():
             "nyt-s": os.environ.get("NYT_S_TOKEN"),
         },
     )
+    
+    print(response.json())
 
     return [
         entry
