@@ -1,4 +1,5 @@
 import os
+import time
 from datetime import datetime, timedelta
 
 import pytz
@@ -71,24 +72,29 @@ def fetch_leaderboard(date_str):
     return leaderboard
 
 
-def fetch_today_leaderboard():
+def fetch_today_leaderboard(num_retries=3, retry_delay_seconds=5):
     today_iso = to_iso(today_eastern())
 
-    response = requests.get(
-        f"https://www.nytimes.com/svc/crosswords/v6/leaderboard/mini/{today_iso}.json",
-        headers={
-            "accept": "application/json",
-            "nyt-s": os.environ.get("NYT_S_TOKEN"),
-        },
-    )
-    
-    print(response.json())
+    # The NYT API can be intermittent, sometimes failing to authenticate.
+    for _ in range(num_retries):
+        try:
+            response = requests.get(
+                f"https://www.nytimes.com/svc/crosswords/v6/leaderboard/mini/{today_iso}.json",
+                headers={
+                    "accept": "application/json",
+                    "nyt-s": os.environ.get("NYT_S_TOKEN"),
+                },
+            )
 
-    return [
-        entry
-        for entry in response.json()["data"]
-        if entry.get("score", {}).get("secondsSpentSolving", 0)
-    ]
+            print(response)
+
+            return [
+                entry
+                for entry in response.json()["data"]
+                if entry.get("score", {}).get("secondsSpentSolving", 0)
+            ]
+        except:
+            time.sleep(retry_delay_seconds)
 
 
 def fetch_live_leaderboard():
