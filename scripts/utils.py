@@ -82,6 +82,8 @@ def fetch_today_leaderboard(num_retries=3, retry_delay_seconds=5):
                 f"https://www.nytimes.com/svc/crosswords/v6/leaderboard/mini/{today_iso}.json",
                 headers={
                     "accept": "application/json",
+                },
+                cookies={
                     "nyt-s": os.environ.get("NYT_S_TOKEN"),
                 },
             )
