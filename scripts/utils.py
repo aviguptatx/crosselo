@@ -104,6 +104,8 @@ def fetch_live_leaderboard():
         f"https://www.nytimes.com/svc/crosswords/v6/leaderboard/mini.json",
         headers={
             "accept": "application/json",
+        },
+        cookies={
             "nyt-s": os.environ.get("NYT_S_TOKEN"),
         },
     )
