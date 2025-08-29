@@ -73,13 +73,10 @@ def fetch_leaderboard(date_str):
 
 
 def fetch_today_leaderboard(num_retries=3, retry_delay_seconds=5):
-    today_iso = to_iso(today_eastern())
-
-    # The NYT API can be intermittent, sometimes failing to authenticate.
     for _ in range(num_retries):
         try:
             response = requests.get(
-                f"https://www.nytimes.com/svc/crosswords/v6/leaderboard/mini/{today_iso}.json",
+                "https://www.nytimes.com/svc/crosswords/v6/leaderboard/mini.json",
                 headers={
                     "accept": "application/json",
                 },
@@ -87,36 +84,14 @@ def fetch_today_leaderboard(num_retries=3, retry_delay_seconds=5):
                     "nyt-s": os.environ.get("NYT_S_TOKEN"),
                 },
             )
-
-            print(response)
-
-            return [
+            resp_json = response.json()
+            print_date = resp_json.get("printDate")
+            leaderboard = [
                 entry
-                for entry in response.json()["data"]
+                for entry in resp_json["data"]
                 if entry.get("score", {}).get("secondsSpentSolving", 0)
             ]
-        except:
+            return leaderboard, print_date
+        except Exception:
             time.sleep(retry_delay_seconds)
-
-
-def fetch_live_leaderboard():
-    response = requests.get(
-        f"https://www.nytimes.com/svc/crosswords/v6/leaderboard/mini.json",
-        headers={
-            "accept": "application/json",
-        },
-        cookies={
-            "nyt-s": os.environ.get("NYT_S_TOKEN"),
-        },
-    )
-
-    return [
-        entry
-        for entry in response.json()["data"]
-        if entry.get("score", {}).get("secondsSpentSolving", 0)
-    ]
-
-
-def format_time(seconds):
-    minutes, seconds = divmod(seconds, 60)
-    return f"{int(minutes):02d}:{int(seconds):02d}"
+    return [], None

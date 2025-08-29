@@ -18,16 +18,13 @@ from utils import (
 def fetch_today_results():
     results = []
 
-    today_iso = to_iso(today_eastern())
-
-    data = fetch_today_leaderboard()
+    data, today_iso = fetch_today_leaderboard()
     for entry in data:
         result = {
             "date": today_iso,
             "username": entry["name"],
             "time": entry["score"]["secondsSpentSolving"],
         }
-
         results.append(result)
 
     return results

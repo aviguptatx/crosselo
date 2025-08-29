@@ -3,12 +3,12 @@ name: Update Database
 on:
   workflow_dispatch:
   schedule:
-    # At 2 AM UTC from Tuesday to Saturday (9 PM EST / 10 PM EDT Monday-Friday)
-    - cron: '0 2 * * 2-6'
-    # At 10 PM UTC on Saturday (5 PM EST / 6 PM EDT Saturday)
-    - cron: '0 23 * * 6'
-    # At 10 PM UTC on Sunday (5 PM EST / 6 PM EDT Sunday)
-    - cron: '0 23 * * 0'
+    # At 1 AM UTC from Tuesday to Saturday (8 PM EST / 9 PM EDT Monday-Friday)
+    - cron: '0 1 * * 2-6'
+    # At 9 PM UTC on Saturday (4 PM EST / 5 PM EDT Saturday)
+    - cron: '0 21 * * 6'
+    # At 9 PM UTC on Sunday (4 PM EST / 5 PM EDT Sunday)
+    - cron: '0 21 * * 0'
 
 jobs:
   update_database:
