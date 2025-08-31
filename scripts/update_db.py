@@ -157,20 +157,20 @@ if __name__ == "__main__":
     for result in results_with_rank:
         supabase_client.table("results_rust").insert(result).execute()
 
-    # current_date = get_most_recent_crossword_date()
+    current_date = get_most_recent_crossword_date()
 
-    # last_30_entries = compute_stats(
-    #     start_date=current_date - timedelta(days=29), end_date=current_date
-    # )
-    # last_90_entries = compute_stats(
-    #     start_date=current_date - timedelta(days=89), end_date=current_date
-    # )
+    last_30_entries = compute_stats(
+        start_date=current_date - timedelta(days=29), end_date=current_date
+    )
+    last_90_entries = compute_stats(
+        start_date=current_date - timedelta(days=89), end_date=current_date
+    )
 
-    # all_old, all_new = fetch_new_stats()
+    all_old, all_new = fetch_new_stats()
 
-    # update_table("last_30_rust", last_30_entries)
-    # update_table("last_90_rust", last_90_entries)
-    # update_table("all_rust", all_new)
+    update_table("last_30_rust", last_30_entries)
+    update_table("last_90_rust", last_90_entries)
+    update_table("all_rust", all_new)
 
-    # print(all_old)
-    # print(all_new)
+    print(all_old)
+    print(all_new)
