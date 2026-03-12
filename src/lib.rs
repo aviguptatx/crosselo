@@ -16,9 +16,9 @@ use crate::database::{
 };
 use crate::templates::{
     HeadToHeadTemplate, HistoryTemplate, LeaderboardTemplate, PodiumTemplate, RecentTemplate,
-    TodayTemplate, UserTemplate, CSS_STYLES,
+    UserTemplate, CSS_STYLES,
 };
-use crate::util::{fetch_live_leaderboard, generate_box_plot_html, generate_scatter_plot_html};
+use crate::util::{generate_box_plot_html, generate_scatter_plot_html};
 
 fn get_db_client<T>(ctx: &RouteContext<T>) -> Result<Postgrest> {
     let url = ctx.secret("SUPABASE_API_URL")?.to_string();
@@ -48,10 +48,6 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         .get_async("/history/:date", |_req, ctx| async move {
             handle_history(&ctx, &get_db_client(&ctx)?).await
         })
-        .get_async(
-            "/today",
-            |_req, ctx| async move { handle_today(&ctx).await },
-        )
         .get_async("/recent", |_req, ctx| async move {
             handle_recent(&get_db_client(&ctx)?).await
         })
@@ -124,14 +120,6 @@ async fn handle_history<T>(ctx: &RouteContext<T>, client: &Postgrest) -> Result<
         .map_err(|e| format!("Couldn't fetch results from database: {e}"))?;
 
     Response::from_html(HistoryTemplate { date, data }.render().unwrap())
-}
-
-async fn handle_today<T>(ctx: &RouteContext<T>) -> Result<Response> {
-    let data = fetch_live_leaderboard(ctx.secret("NYT_S_TOKEN")?.to_string())
-        .await
-        .map_err(|e| format!("Couldn't fetch live leaderboard from NYT API: {e}"))?;
-
-    Response::from_html(TodayTemplate { data }.render().unwrap())
 }
 
 async fn handle_recent(client: &Postgrest) -> Result<Response> {

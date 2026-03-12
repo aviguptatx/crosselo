@@ -1,6 +1,6 @@
 use askama::Template;
 
-use crate::models::{HeadToHeadData, LeaderboardEntry, NytResultEntry, ResultEntry};
+use crate::models::{HeadToHeadData, LeaderboardEntry, ResultEntry};
 
 mod filters {
     pub fn convert_time_to_mm_ss(seconds: &i32) -> ::askama::Result<String> {
@@ -15,13 +15,6 @@ mod filters {
 
     pub fn convert_decimal_to_percentage(decimal: &f64) -> ::askama::Result<String> {
         Ok(format!("{:.2}%", decimal * 100.0))
-    }
-
-    pub fn unpack_time(score: &Option<crate::models::NytScore>) -> ::askama::Result<String> {
-        score.as_ref().map_or_else(
-            || Ok(String::from("--")),
-            |score| convert_time_to_mm_ss(&score.seconds_spent_solving),
-        )
     }
 }
 
@@ -57,12 +50,6 @@ pub struct HistoryTemplate {
 #[template(path = "recent.html")]
 pub struct RecentTemplate {
     pub dates: Vec<String>,
-}
-
-#[derive(Template)]
-#[template(path = "today.html")]
-pub struct TodayTemplate {
-    pub data: Vec<NytResultEntry>,
 }
 
 #[derive(Template, Default)]

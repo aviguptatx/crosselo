@@ -3,12 +3,11 @@ use plotly::color::Rgb;
 use plotly::common::{Line, Marker, Mode, Title};
 use plotly::layout::{Axis, RangeSelector, RangeSlider, SelectorButton, SelectorStep, StepMode};
 use plotly::{BoxPlot, Layout, Plot, Scatter};
-use reqwest::header;
 use skillratings::trueskill::{expected_score, TrueSkillConfig, TrueSkillRating};
 use std::cmp::{max, min};
 use std::error::Error;
 
-use crate::models::{NytApiResponse, NytResultEntry, ResultEntry};
+use crate::models::ResultEntry;
 
 use thiserror::Error;
 
@@ -250,34 +249,6 @@ pub fn compute_win_probability(user1: (f64, f64), user2: (f64, f64)) -> f64 {
         },
     )
     .0
-}
-
-/// Fetches the live leaderboard data from the New York Times API.
-///
-/// # Arguments
-///
-/// * `token` - The authentication token for the New York Times API.
-///
-/// # Returns
-///
-/// A `Result` containing a vector of `NytResultEntry` values, or an error if the API request fails.
-pub async fn fetch_live_leaderboard(token: String) -> Result<Vec<NytResultEntry>, Box<dyn Error>> {
-    let client = reqwest::Client::new();
-
-    let cookie_value = format!("nyt-s={}", token);
-
-    let body = client
-        .get("https://www.nytimes.com/svc/crosswords/v6/leaderboard/mini.json")
-        .header(header::ACCEPT, "application/json")
-        .header(header::COOKIE, cookie_value)
-        .send()
-        .await?
-        .text()
-        .await?;
-
-    let api_response: NytApiResponse = serde_json::from_str(&body)?;
-
-    Ok(api_response.data)
 }
 
 #[cfg(test)]
